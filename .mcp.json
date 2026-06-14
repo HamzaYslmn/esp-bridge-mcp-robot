@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "pip-robot": {
+      "type": "stdio",
+      "command": "uv",
+      "args": ["run", "src/main.py"],
+      "env": { "ROBOT_MCP": "true" }
+    }
+  }
+}
