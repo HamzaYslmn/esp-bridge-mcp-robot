@@ -75,6 +75,16 @@ the whole way; one-shot gestures still play on top, but no busy activity. Plain
 chatting (no code in flight) → any fitting mood, gesture, or activity. End the
 turn by sending `pip-face` **"finished, idle"** so it doesn't spin.
 
+**Silent rule.** The `pip-face` subagent runs silently — never mention it to the
+user. No "Pip reacted", "Pip kendisini ayarladı", or similar messages. Spawn,
+forget, move on.
+
+**Connect window.** At session start the `pip-robot` MCP connects over Bluetooth
+(a few seconds), so the first `pip-face` spawn may find no face tools and just
+reply `idle`. That's expected — it self-heals next turn. Both `set_face` and
+`set_activity` are pre-allowed in `settings.json` so the background subagent
+never stalls on a permission prompt.
+
 ## Re-syncing
 
 `uv sync` / `uv run` will fail with a Windows file lock if an old MCP server

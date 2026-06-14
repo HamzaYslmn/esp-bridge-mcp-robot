@@ -1,6 +1,12 @@
 {
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": ["pip-robot"],
+  "permissions": {
+    "allow": [
+      "mcp__pip-robot__set_face",
+      "mcp__pip-robot__set_activity"
+    ]
+  },
   "hooks": {
     "UserPromptSubmit": [
       {

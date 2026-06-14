@@ -134,11 +134,43 @@ uv run src/main.py demo           # interactive menu: play any mood/gesture/acti
 uv run src/main.py --no-display   # run with no board attached (just the engine)
 ```
 
-- **Claude Code (MCP, default):** `.mcp.json` already registers `pip-robot` →
-  `uv run src/main.py`. Open this folder in Claude Code and approve the server;
-  Claude can then set Pip's face and drive any pin.
+- **Claude Code (MCP, default):** the repo ships a `.mcp.json` that registers
+  `pip-robot`, so just **open this folder in Claude Code and approve the server**
+  when prompted — see below.
 - **Local Ollama chat:** set `ROBOT_MCP=false` in `.env`, then `uv run src/main.py`
   and talk to Pip in the terminal.
+
+### Use Pip as a Claude Code tool
+
+Opening the folder is enough — Claude Code auto-detects the checked-in `.mcp.json`
+and asks you to trust the `pip-robot` server. If you'd rather register it
+explicitly (or add it to a different project), run from the repo root:
+
+```bash
+claude mcp add --transport stdio --env ROBOT_MCP=true --scope project pip-robot \
+  -- uv run src/main.py
+```
+
+`--scope project` writes to `.mcp.json` (shared, checked into git); use
+`--scope user` to make Pip available in every project, or `--scope local` for a
+personal, un-committed entry. Reset a trust choice with
+`claude mcp reset-project-choices`.
+
+**Let Pip react hands-free.** A `UserPromptSubmit` hook spawns a tiny `pip-face`
+subagent each turn so the eyes mirror what Claude is doing. Background subagents
+can't answer permission prompts, so the face tools are pre-allowed in
+`.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "allow": ["mcp__pip-robot__set_face", "mcp__pip-robot__set_activity"]
+  }
+}
+```
+
+The pin/`notify` tools are left out on purpose — Claude asks before moving
+hardware. Add `"mcp__pip-robot__*"` if you want to pre-approve everything.
 
 ## Configuration (`.env`, defaults in `.env.example`)
 

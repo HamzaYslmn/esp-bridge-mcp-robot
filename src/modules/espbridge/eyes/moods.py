@@ -74,6 +74,10 @@ def _dead(d, x, y, w, h, r, ir):  # KO -- an X carved across the eye
     d.line([x + w - 4, y + 3, x + 3, y + h - 4], fill=0, width=lw)
 
 
+def _smug(d, x, y, w, h, r, ir):       _lids(d, x, y, w, h, top=0.30)         # confident shallow lid -- self-satisfied
+def _suspicious(d, x, y, w, h, r, ir): _lids(d, x, y, w, h, 0.40, 0.88)      # heavy slit + pinched bottom -- side-eye
+
+
 def _decor_lovely(d, W, H, now, ox=0.0, oy=0.0):  # little hearts & sparkles scattered around -- smitten
     spots = ((0.50, 0.07), (0.24, 0.14), (0.76, 0.12), (0.05, 0.40), (0.95, 0.42),
              (0.07, 0.74), (0.93, 0.72), (0.28, 0.90), (0.72, 0.88))
@@ -119,5 +123,8 @@ MOODS = {
     "attentive":   {"dw": 2, "dh": 2, "paint": _attentive},  # leaned in, locked on -- "go ahead"
     "standby":     {"dw": -6, "dh": -6, "paint": _standby},  # dim low-power idle -- ready, not off
     "smoking":     {"dh": -4, "paint": _smoking, "decor": _decor_smoke},  # chilled, thin smoke curling up
+    "smug":        {"bias": 0.1, "paint": _smug},                         # shallow lid + slight asymmetry -- self-satisfied
+    "suspicious":  {"dw": -2, "paint": _suspicious},                      # narrow slit eyes -- side-eye
+    "awe":         {"dw": 4, "dh": 14},                                   # huge open eyes -- pure wonder
 }
 EMOTIONS = tuple(MOODS)
