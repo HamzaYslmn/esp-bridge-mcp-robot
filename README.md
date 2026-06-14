@@ -9,6 +9,8 @@ ESPBridge) — flash the board once, then everything runs in Python on your comp
 
 <p align="center"><img src="docs/pip-eyes.gif" width="384" alt="Every Pip mood, gesture and activity"></p>
 
+<p align="center"><img src="docs/coding.gif" width="384" alt="Pip reacting live while Claude Code works"></p>
+
 - **Face** — procedural animated eyes (PIL): 23 emotions + 25 gestures +
   7 looping activities, auto-blink and idle glances, on a background thread.
 - **Autonomous pins** — tell Pip what's wired to which pin; it drives any pin
