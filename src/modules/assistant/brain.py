@@ -50,10 +50,8 @@ class Brain:
         self.history: list[dict] = []
 
     def respond(self, text: str) -> str:
-        messages = [{"role": "system", "content": SYSTEM_PROMPT},
-                    *self.history, {"role": "user", "content": text}]
-        reply = ollama_llm.response(messages, tools=self.tools, schema=REPLY_SCHEMA,
-                                    history=self.history)
+        reply = ollama_llm.response(text, instruction=SYSTEM_PROMPT, history=self.history,
+                                    tools=self.tools, schema=REPLY_SCHEMA)
         del self.history[:-MAX_HISTORY]
 
         emotion = reply.get("emotion") if reply.get("emotion") in EMOTIONS else "neutral"

@@ -15,8 +15,20 @@ import os
 
 log = logging.getLogger("robot.llm")
 _client = None
-_OPTS = {"num_ctx": 8192, "temperature": 0.7}
+
+# env defaults; any response() call can override them.
 MODEL = os.getenv("ROBOT_MODEL", "qwen3.5:4b")
+OPTS = {"num_ctx": int(os.getenv("ROBOT_NUM_CTX", "4096")), "temperature": 0.7}
+
+
+def _default_think():
+    """ROBOT_THINK: 'low' (default) keeps reasoning brief; 'medium'/'high' or false."""
+    v = os.getenv("ROBOT_THINK", "low").strip().lower()
+    return v if v in ("low", "medium", "high") else v in ("1", "true", "yes", "on")
+
+
+THINK = _default_think()
+
 
 def _get_client():
     global _client
@@ -27,24 +39,37 @@ def _get_client():
     return _client
 
 
-def response(messages, *, tools=None, schema=None, history=None, max_steps=6):
+def response(
+    prompt: str = "",
+    *,
+    instruction: str = "",
+    messages: list[dict] = None,
+    images: list[bytes] = None,
+    schema: dict = None,
+    model: str = None,
+    tools: list = None,
+    options: dict = None,
+    think=None,
+    keep_alive: str = "30m",
+    max_steps: int = 10,
+    history: list = None,
+    **_,
+):
     """Run the tool loop, then return a dict matching `schema` (or reply text).
 
-    messages: a list of message dicts, or a plain string treated as the user turn.
-    schema: a Pydantic model class or JSON schema dict; the final answer is
-            grammar-constrained to it.
+    Pass a ready `messages` list, or let it build [instruction] + history + prompt.
     """
     client = _get_client()
-    msgs = [{"role": "user", "content": messages}] if isinstance(messages, str) else list(messages)
+    msgs = list(messages) if messages else _build(instruction, history, prompt, images)
     fns = {t.__name__: t for t in tools} if tools else {}
-    user = next((m["content"] for m in reversed(msgs)
-                 if isinstance(m, dict) and m.get("role") == "user"), "")
+    shared = dict(model=model or MODEL, options=options or OPTS,
+                  think=THINK if think is None else think, keep_alive=keep_alive)
 
     # phase 1 -- let the model act with tools until it stops calling them
     content = ""
-    for _ in range(max_steps):
+    for _step in range(max_steps):
         try:
-            msg = client.chat(model=MODEL, messages=msgs, tools=tools, options=_OPTS).message
+            msg = client.chat(messages=msgs, tools=tools, **shared).message
         except Exception as e:
             return _shape(f"Error: {e}", schema)
         if not msg.tool_calls:
@@ -56,22 +81,36 @@ def response(messages, *, tools=None, schema=None, history=None, max_steps=6):
                          "content": str(_call(fns, tc))})
 
     # phase 2 -- coerce the final answer into the schema (grammar-constrained)
-    reply = _structured(client, MODEL, msgs, schema, content) if schema else content
+    reply = _structured(client, msgs, schema, content, shared) if schema else content
 
     if history is not None:
         text = reply.get("response", "") if isinstance(reply, dict) else reply
-        history += [{"role": "user", "content": user},
+        history += [{"role": "user", "content": prompt},
                     {"role": "assistant", "content": text}]
     return reply
 
 
-def _structured(client, model, msgs, schema, fallback):
+def _build(instruction, history, prompt, images):
+    """[system] + history + the user turn (with optional images)."""
+    msgs = []
+    if instruction:
+        msgs.append({"role": "system", "content": instruction})
+    if history:
+        msgs += history
+    user = {"role": "user", "content": prompt}
+    if images:
+        user["images"] = images
+    msgs.append(user)
+    return msgs
+
+
+def _structured(client, msgs, schema, fallback, shared):
     """Force the final answer to match `schema`, then parse it to a dict."""
     # a Pydantic model class carries its own JSON schema; a dict is used as-is
     fmt = schema.model_json_schema() if hasattr(schema, "model_json_schema") else schema
+    cool = {**shared, "options": {**shared["options"], "temperature": 0.3}}
     try:
-        out = client.chat(model=model, messages=msgs, format=fmt,
-                          options={**_OPTS, "temperature": 0.3}).message
+        out = client.chat(messages=msgs, format=fmt, **cool).message
         return json.loads(out.content or "{}")
     except Exception as e:
         log.warning("structured reply failed: %s", e)
