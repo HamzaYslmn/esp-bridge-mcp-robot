@@ -1,4 +1,17 @@
 {
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": ["pip-robot"]
+  "enabledMcpjsonServers": ["pip-robot"],
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-sync .claude/hooks/pip_react.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
 }
