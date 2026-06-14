@@ -3,14 +3,16 @@ name = "esp-bridge-mcp-robot"
 version = "0.1.0"
 description = "A robot assistant with an animated OLED face, running on an ESP32 over python-esp-bridge."
 readme = "README.md"
-# python-esp-bridge needs 3.10+; keep the lower bound at 3.11 so wheels resolve.
-# If `uv sync` fails on a missing wheel, run `uv python pin 3.12 && uv sync`.
-requires-python = ">=3.11"
+# python-esp-bridge needs 3.10+; 3.13 lower bound keeps our own deps happy.
+requires-python = ">=3.13"
 dependencies = [
     "ollama>=0.4",
     "python-dotenv>=1.0",
     "python-esp-bridge[all]",
 ]
+
+[project.scripts]
+pip-robot = "modules.cli:main"
 
 [build-system]
 requires = ["hatchling"]

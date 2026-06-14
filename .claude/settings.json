@@ -6,18 +6,5 @@
       "mcp__pip-robot__set_face",
       "mcp__pip-robot__set_activity"
     ]
-  },
-  "hooks": {
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run --no-sync .claude/hooks/pip_react.py",
-            "timeout": 15
-          }
-        ]
-      }
-    ]
   }
 }

@@ -51,8 +51,7 @@ uv sync
 This installs the Python deps, including `python-esp-bridge[all]` — the Bluetooth
 link, the OLED driver, the MCP server, and the firmware flasher (next step).
 
-> Python 3.14 is pinned in `.python-version`. If `uv sync` fails on a missing
-> wheel, run `uv python pin 3.12 && uv sync`.
+> Python 3.14 is pinned in `.python-version` (3.13+ also works).
 
 ### 2. Flash the ESPBridge firmware onto the ESP32 (once)
 
@@ -142,24 +141,54 @@ uv run src/main.py --no-display   # run with no board attached (just the engine)
 
 ### Use Pip as a Claude Code tool
 
-Opening the folder is enough — Claude Code auto-detects the checked-in `.mcp.json`
-and asks you to trust the `pip-robot` server. If you'd rather register it
-explicitly (or add it to a different project), run from the repo root:
+**Inside this repo:** opening the folder is enough — Claude Code auto-detects the
+checked-in `.mcp.json` and asks you to trust the `pip-robot` server.
+
+**In any other project — no checkout, one command.** Pip ships a `pip-robot`
+console script, so [uvx](https://docs.astral.sh/uv/guides/tools/) can run it
+straight from GitHub in a throwaway environment:
+
+```bash
+claude mcp add --transport stdio --env ROBOT_MCP=true --scope user pip-robot \
+  -- uvx --from git+https://github.com/HamzaYslmn/esp-bridge-ai-robot pip-robot
+```
+
+That registers this `.mcp.json` for **every** project:
+
+```json
+{
+  "mcpServers": {
+    "pip-robot": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/HamzaYslmn/esp-bridge-ai-robot", "pip-robot"],
+      "env": { "ROBOT_MCP": "true" }
+    }
+  }
+}
+```
+
+The defaults match the default firmware (password `espbridge`, auto-pick the
+first board). To override — a custom password, a specific board, different OLED
+pins — add them to the `env` block (`ROBOT_PASSWORD`, `ROBOT_BLE_TARGET`,
+`ROBOT_OLED_SDA`/`_SCL`; see the table below) or drop a `.env` next to where the
+server launches. uvx caches the build; `uvx --refresh ...` pulls the latest.
+
+**Prefer the local checkout?** Register the repo copy instead — handy while
+hacking on the eyes, since edits take effect with no reinstall:
 
 ```bash
 claude mcp add --transport stdio --env ROBOT_MCP=true --scope project pip-robot \
   -- uv run src/main.py
 ```
 
-`--scope project` writes to `.mcp.json` (shared, checked into git); use
-`--scope user` to make Pip available in every project, or `--scope local` for a
-personal, un-committed entry. Reset a trust choice with
-`claude mcp reset-project-choices`.
+`--scope project` writes to `.mcp.json` (shared, checked into git); `--scope user`
+makes Pip available in every project; `--scope local` is a personal, un-committed
+entry. Reset a trust choice with `claude mcp reset-project-choices`.
 
-**Let Pip react hands-free.** A `UserPromptSubmit` hook spawns a tiny `pip-face`
-subagent each turn so the eyes mirror what Claude is doing. Background subagents
-can't answer permission prompts, so the face tools are pre-allowed in
-`.claude/settings.json`:
+**Pip reacts as Claude works.** Claude Code calls the `set_face` / `set_activity`
+MCP tools directly while it codes — no hooks, no side-channel. Those two tools are
+pre-allowed in `.claude/settings.json` so the face never stalls on a permission
+prompt:
 
 ```json
 {
@@ -204,4 +233,9 @@ Regenerate the showcase GIF above (every mood, gesture and activity) with
 - **Wireless doesn't work at all** — confirm it's a *classic* ESP32; S3/C3/C6/H2
   build the bridge USB-only.
 - **Blank OLED** — check the SDA/SCL wiring matches `ROBOT_OLED_SDA`/`_SCL`.
-- **`uv sync` fails on a wheel** — `uv python pin 3.12 && uv sync`.
+- **Bluetooth dropped mid-session** — Pip self-heals: the next frame reopens the
+  link and the face resumes once the board is back (no restart needed). If it stays
+  dark, the board lost power or is out of range — power it and it reconnects within
+  a few seconds.
+- **`uv sync` fails on a wheel** — a dependency may lack a wheel for your Python;
+  `uv python pin 3.13 && uv sync` falls back to a version that has one.

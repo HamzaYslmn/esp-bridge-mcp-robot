@@ -4,10 +4,11 @@ the face and any ESP32 pin autonomously."""
 from __future__ import annotations
 
 
-def build_tools(eyes, bridge=None):
+def build_tools(eyes, mgr=None):
     """Return the tool functions bound to this robot's eyes and ESP32 bridge.
 
-    Pin tools are only included when a bridge is connected.
+    `mgr` is a self-healing BridgeManager (or None for face-only). Pin tools fetch
+    the live bridge via `mgr.bridge()` each call, so they survive a BLE reconnect.
     """
 
     def set_face(emotion: str, gesture: str = "none") -> str:
@@ -54,18 +55,19 @@ def build_tools(eyes, bridge=None):
         return f"notify: {reason or 'attention'}"
 
     tools = [set_face, set_activity, notify]
-    if bridge is None:
+    if mgr is None:
         return tools
 
     def digital_read(pin: int) -> str:
         """Read a digital input pin with an internal pull-up (button, switch)."""
+        bridge = mgr.bridge()
         bridge.gpio.mode(pin, "input_pullup")
         return f"pin {pin} = {bridge.gpio.read(pin)}"
 
     def set_servo(pin: int, angle: int) -> str:
         """Move a servo on a pin to an angle from 0 to 180 degrees."""
         angle = max(0, min(180, angle))
-        bridge.pwm.servo(pin, angle)
+        mgr.bridge().pwm.servo(pin, angle)
         return f"servo {pin} -> {angle} deg"
 
     return tools + [digital_read, set_servo]

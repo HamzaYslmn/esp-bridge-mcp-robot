@@ -7,10 +7,10 @@ import math
 from .primitives import draw_formula
 
 ACTIVITIES = ("idle", "thinking", "scanning", "searching", "working", "listening",
-              "processing", "connecting")
+              "processing", "connecting", "editing")
 # each busy activity wears a fitting face; listening just stays attentive (neutral)
 ACT_MOOD = {"thinking": "focused", "scanning": "neutral", "searching": "focused",
-            "working": "focused", "listening": "neutral",
+            "working": "focused", "listening": "neutral", "editing": "smoking",
             "processing": "focused", "connecting": "attentive"}
 
 

@@ -11,12 +11,12 @@ from modules.espbridge.eyes import ACTIVITIES, EMOTIONS, GESTURES, EyeEngine
 
 class Robot:
     def __init__(self, *, no_display=False):
-        self.bridge = None
+        self.bridge_mgr = None
         if no_display:
             self.oled = NullDisplay()
         else:
             try:
-                self.bridge, self.oled = connect_display()
+                self.bridge_mgr, self.oled = connect_display()
             except Exception as e:  # no board / no bridge -> face-only stub
                 print(f"[robot] no display ({e}); running face-only", flush=True)
                 self.oled = NullDisplay()
@@ -24,7 +24,7 @@ class Robot:
         self.eyes = EyeEngine(self.oled.show, width=self.oled.width,
                              height=self.oled.height, fps=int(os.getenv("ROBOT_FPS", "24")))
         self.eyes.start()
-        self.tools = build_tools(self.eyes, self.bridge)
+        self.tools = build_tools(self.eyes, self.bridge_mgr)
 
     def run_chat(self):
         """Local Ollama chat loop in the terminal."""
@@ -111,8 +111,8 @@ class Robot:
             self.oled.clear()
         except Exception:
             pass
-        if self.bridge is not None:
-            self.bridge.close()
+        if self.bridge_mgr is not None:
+            self.bridge_mgr.shutdown()   # closes the link
 
     def __enter__(self):
         return self
