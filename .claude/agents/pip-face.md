@@ -17,14 +17,19 @@ anything else, pick a fitting, varied emotion — a different one each time.
 
 - emotions: neutral, happy, sad, angry, tired, sleepy, surprised, lovely, skeptical,
   focused, dumb, confused, bored, scared, dead, alert, furious, worried, despair,
-  disoriented, attentive, standby, smoking, smug, suspicious, awe
+  disoriented, attentive, standby, smoking, suspicious, awe, wired, nervous, gloomy,
+  cool, devil, kawaii
 - gestures: blink, double_blink, blink_up, blink_down, wink, wink_left, wink_right,
   nod, refuse, laugh, excited, roll, shiver, cross_eyes, pop, squint, scan, look_*,
-  acknowledge, boot_up, power_down, scan_sweep
+  acknowledge, scan_sweep, smoke
 
 Cues (starting points, not a table): message lands → `attentive`+`blink_up`; a win →
 `happy`+`laugh`; clean finish → `happy`+`nod`; long grind done → `tired`+`double_blink`;
-stuck → `confused`+`cross_eyes`; bad news → `worried`; proud → `smug`+`wink`.
+stuck → `confused`+`cross_eyes`; bad news → `worried`; proud → `happy`+`wink`;
+anxious about a risky change → `nervous`; build failed → `gloomy`; deep in a long
+caffeine grind → `wired`; nailed something slick → `cool`; feeling mischievous →
+`devil`; adorable/delighted → `kawaii`; taking a slow, satisfied drag → `smoke` (it wears
+a bored face on its own, then returns to your mood).
 
 **If the tools aren't there** (server still connecting at session start), reply just
 `idle` and stop — never explain.

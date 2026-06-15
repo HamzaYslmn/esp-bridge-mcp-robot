@@ -22,7 +22,9 @@ class Robot:
                 self.oled = NullDisplay()
 
         self.eyes = EyeEngine(self.oled.show, width=self.oled.width,
-                             height=self.oled.height, fps=int(os.getenv("ROBOT_FPS", "24")))
+                             height=self.oled.height, fps=int(os.getenv("ROBOT_FPS", "24")),
+                             set_brightness=self.oled.contrast,
+                             bright=int(os.getenv("ROBOT_BRIGHTNESS", "255")))
         self.eyes.start()
         self.tools = build_tools(self.eyes, self.bridge_mgr)
 
@@ -58,10 +60,27 @@ class Robot:
                  + [("activity", a) for a in activities])
 
         def show_menu():
-            print("\n=== Pip demo menu ===")
-            for i, (kind, name) in enumerate(items, 1):
-                print(f"  {i:>2}. [{kind}] {name}")
-            print("  a. play all (2s each)   q. quit")
+            # three side-by-side columns; the printed number is the index into `items`
+            cols = [("MOODS", moods, 0),
+                    ("GESTURES", gestures, len(moods)),
+                    ("ACTIVITIES", activities, len(moods) + len(gestures))]
+            w = max(len(n) for _, n in items)                       # widest name
+            cw = w + 4                                              # "NN. " prefix + name
+            total = cw * 3 + 6                                      # plus two " | " gutters
+            cell = lambda i, n: f"{i:>2}. {n:<{w}}"
+            print("\n  " + "=" * total)
+            print("  " + " Pip demo menu".ljust(total))
+            print("  " + "=" * total)
+            print("  " + " | ".join(f"{t:<{cw}}" for t, _, _ in cols))
+            print("  " + "-+-".join("-" * cw for _ in cols))
+            for r in range(max(len(c[1]) for c in cols)):
+                cells = [cell(off + r + 1, lst[r]) if r < len(lst) else " " * cw
+                         for _, lst, off in cols]
+                while len(cells) > 1 and not cells[-1].strip():     # drop trailing empty columns
+                    cells.pop()
+                print("  " + " | ".join(cells))
+            print("  " + "=" * total)
+            print("  a = play all (2s each)    q = quit    (number or name)")
 
         def play(kind, name):
             print(f"-> {kind}: {name}")

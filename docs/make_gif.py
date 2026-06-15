@@ -78,10 +78,11 @@ def main():
             eyes.set_mood(m)
             _record(f"mood: {m}", MOOD_SEC)
 
-        eyes.set_mood("neutral")
         for g in GESTURES:                       # one-shot motions
             if g == "none":
                 continue
+            eyes.set_mood("neutral")             # turn back to a natural face first...
+            time.sleep(0.4)                      # ...and let it settle so the gesture isn't shown on the last mood
             eyes.play_gesture(g)
             _record(f"gesture: {g}", max(0.8, _gesture_dur(g) + GEST_PAD))
 

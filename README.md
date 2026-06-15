@@ -11,8 +11,8 @@ ESPBridge) — flash the board once, then everything runs in Python on your comp
 
 <p align="center"><img src="docs/coding.gif" width="384" alt="Pip reacting live while Claude Code works"></p>
 
-- **Face** — procedural animated eyes (PIL): 23 emotions + 25 gestures +
-  7 looping activities, auto-blink and idle glances, on a background thread.
+- **Face** — procedural animated eyes (PIL): 31 emotions + 24 gestures +
+  8 looping activities, auto-blink and idle glances, on a background thread.
 - **Autonomous pins** — tell Pip what's wired to which pin; it drives any pin
   (servos, LEDs, motors, buzzers, sensors) through tool calls. No per-device code.
 - **Two control paths** — Claude Code over MCP (drives the face + pins via tools),
@@ -212,6 +212,7 @@ hardware. Add `"mcp__pip-robot__*"` if you want to pre-approve everything.
 | `ROBOT_PASSWORD` | `espbridge` | Firmware Bluetooth password (`EspBridge.begin(...)`) |
 | `ROBOT_OLED_SDA` / `_SCL` | `21` / `22` | OLED I²C pins |
 | `ROBOT_FPS` | `24` | Eye frame rate |
+| `ROBOT_BRIGHTNESS` | `255` | OLED brightness cap 0–255 (moods like `standby` dim below it) |
 
 ## Extending
 

@@ -12,6 +12,9 @@ class NullDisplay:
     def show(self, image=None):
         pass
 
+    def contrast(self, value=0):
+        pass
+
     def clear(self):
         pass
 
@@ -37,6 +40,9 @@ class Display:
 
     def show(self, image=None):
         self._panel().show(image)
+
+    def contrast(self, value):
+        self._panel().contrast(value)          # OLED brightness, 0..255
 
     def clear(self):
         self._panel().clear()

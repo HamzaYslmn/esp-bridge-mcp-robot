@@ -17,12 +17,14 @@ def build_tools(eyes, mgr=None):
         emotion: the sustained expression the face holds until you change it --
             neutral, happy, sad, angry, tired, sleepy, surprised, lovely,
             skeptical, focused, dumb, confused, bored, scared, dead, alert,
-            furious, worried, despair, disoriented, attentive, standby, or smoking.
+            furious, worried, despair, disoriented, attentive, standby, smoking,
+            suspicious, awe, wired, nervous, gloomy, cool, devil, or kawaii.
         gesture: a momentary animation that plays once, then the emotion resumes --
             none, blink, double_blink, blink_up, blink_down, wink, wink_left,
             wink_right, nod, refuse, laugh, excited, roll, shiver, cross_eyes,
             pop, squint, scan, look_left, look_right, look_up, look_down,
-            acknowledge, boot_up, power_down, or scan_sweep.
+            acknowledge, scan_sweep, or smoke (a slow drag + exhaled plume;
+            wears a bored face while it plays, then restores your mood).
         """
         eyes.set_mood(emotion)
         eyes.play_gesture(gesture)  # no-op on "none"
