@@ -22,8 +22,9 @@ _MASK = ({"left", "right"}, 0.24, 1)         # blink that hides a mood's lid swa
 class EyeEngine:
     def __init__(self, show, *, width=128, height=64, fps=30,
                  eye_w=36, eye_h=36, radius=12, gap=10,
-                 set_brightness=None, bright=255):        # bright = panel brightness, max by default
-        self._show = show
+                 set_brightness=None, bright=255,          # bright = panel brightness, max by default
+                 clock=time.monotonic):                    # swap for a virtual clock to render offline
+        self._show, self._clock = show, clock
         self._set_brightness, self._bright = set_brightness, bright
         self._cur_bright = None                          # unset -> first frame pushes it
         self.W, self.H, self.fps = width, height, max(5, fps)
@@ -35,6 +36,7 @@ class EyeEngine:
 
         self.gx = self.gy = 0.0                          # eased pose (thread-only)
         self.ew, self.eh = float(eye_w), float(eye_h)
+        self._last = 0.0                                  # time of the previous step (for dt)
 
         self._lock = threading.Lock()                    # guards the fields below
         self.mood = "neutral"
@@ -68,12 +70,12 @@ class EyeEngine:
                 self._pending = m
             else:
                 self.mood = m
-                self._begin_blink(time.monotonic(), _MASK)
+                self._begin_blink(self._clock(), _MASK)
 
     def play_gesture(self, name):
         """Play a commanded blink/gesture; preempts whatever's on the moving layer."""
         name = (name or "none").lower()
-        now = time.monotonic()
+        now = self._clock()
         with self._lock:
             if self._restore_mood is not None:           # interrupting a face-gesture -> restore its mood
                 self.mood, self._restore_mood = self._restore_mood, None
@@ -106,22 +108,31 @@ class EyeEngine:
         self._blink = {"eyes": set(eyes), "start": now, "dur": dur, "reps": reps}
         self._next_blink = now + dur + random.uniform(2, 6)
 
-    def _loop(self):
-        now = last = time.monotonic()
+    def reset_timers(self, now):
+        """Seed the step clock and the next spontaneous blink/glance (call before stepping)."""
+        self._last = now
         self._next_blink = now + random.uniform(2, 6)
         self._next_idle = now + random.uniform(1.5, 5)
+
+    def step(self, now):
+        """Advance one frame to time `now` and return the rendered buffer (no hardware push)."""
+        dt = min(0.1, now - self._last)                   # clamp so a stall can't teleport the eyes
+        self._last = now
+        mood, act, look = self._schedule(now)
+        self._ease_pose(now, dt, mood, act, look)
+        return self._render(now)
+
+    def _loop(self):
+        self.reset_timers(self._clock())
         frame = 1.0 / self.fps
         while not self._stop.is_set():
-            now = time.monotonic()
-            dt = min(0.1, now - last)                     # clamp so a stall can't teleport the eyes
-            last = now
-            mood, act, look = self._schedule(now)
-            self._ease_pose(now, dt, mood, act, look)
+            now = self._clock()
+            img = self.step(now)
             try:
-                self._show(self._render(now))
+                self._show(img)
             except Exception:
                 pass                                      # transient BLE/I2C hiccup -- keep going
-            time.sleep(max(0.0, frame - (time.monotonic() - now)))
+            time.sleep(max(0.0, frame - (self._clock() - now)))
 
     def _schedule(self, now):
         """Locked: retire finished moves, fire the next auto blink/glance, snapshot state."""
