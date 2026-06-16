@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import math
 import random
+import sys
 import threading
 import time
 
@@ -16,6 +17,13 @@ from PIL import Image, ImageDraw
 _TAU_GAZE, _TAU_SIZE = 0.09, 0.11            # gaze / eye-size settle time-constants
 _AUTO = ({"left", "right"}, 0.20, 1)         # spontaneous blink (eyes, dur, reps)
 _MASK = ({"left", "right"}, 0.24, 1)         # blink that hides a mood's lid swap
+
+# License lock (LICENSE 2.2): sha256 of the original GitHub Sponsors QR baked into actions/sponsor.py.
+# On load the engine fingerprints that QR and, if it no longer matches, prints sponsor.SPONSOR_NOTICE
+# to stderr -- a notice, never a block. The sponsor link is required by the license; removing it (which
+# also means editing this constant) is permitted only under separate commercial terms.
+_SPONSOR_FINGERPRINT = "4f93689635e17c20911891a195de5050b5b379f4ce815e7e460227ea4f64658b"
+_sponsor_checked = False                     # print the notice at most once per process
 
 
 # ----------------------------------------------------------- shared eye math
@@ -78,6 +86,7 @@ class EyeEngine:
         from .gestures import GESTURES                     # files can import the eye math above without
         from .moods import MOODS                           # a circular import back through the registries
         self.MOODS, self.GESTURES, self.ACTIONS = MOODS, GESTURES, ACTIONS
+        self._verify_sponsor()                             # license lock: notice if the sponsor link was altered
 
         self._show, self._clock = show, clock
         self._set_brightness, self._bright = set_brightness, bright
@@ -104,6 +113,22 @@ class EyeEngine:
         self._thread = None
 
     # ------------------------------------------------------------------ API
+    @staticmethod
+    def _verify_sponsor():
+        """License lock (LICENSE 2.2): if the baked-in sponsor link was altered, print the notice
+        to stderr -- once per process -- and carry on. Never blocks Pip; silencing it means editing
+        the link out, which the license permits only under separate commercial terms."""
+        global _sponsor_checked
+        if _sponsor_checked:
+            return
+        _sponsor_checked = True
+        try:
+            from .actions import sponsor
+            if sponsor.fingerprint() != _SPONSOR_FINGERPRINT:
+                print(sponsor.SPONSOR_NOTICE, file=sys.stderr)
+        except Exception:
+            pass                                          # a missing/odd sponsor module never blocks startup
+
     def start(self):
         if not (self._thread and self._thread.is_alive()):
             self._stop.clear()

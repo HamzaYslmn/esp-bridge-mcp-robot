@@ -5,7 +5,10 @@ Pip is an **ESP32 + 128×64 OLED** showing **procedurally animated eyes**, drive
 desktop window.
 
 <p align="center"><img src="docs/pip-eyes.gif" width="384" alt="Every Pip mood, gesture and activity"></p>
-<p align="center"><img src="docs/smoking.gif" width="384" alt="Pip reacting live while Claude Code works"></p>
+<p align="center">
+  <img src="docs/smoking.gif" width="384" alt="Pip reacting live while Claude Code works">
+  <img src="docs/zen.gif" width="384" alt="Pip in its zen mood">
+</p>
 
 ## Use Pip in Claude Code
 
@@ -56,9 +59,9 @@ uv run src/main.py demo           # menu: play any mood / gesture / activity
 uv run src/main.py --no-display   # no board: emulate the OLED in a desktop window
 ```
 
-The emulator window is frameless and always‑on‑top — drag it by its body, **Esc** or **Ctrl+C**
-closes it. Prefer local chat? Set `ROBOT_MCP=false`, `ollama pull qwen3.5:4b`, then run and talk
-to Pip in the terminal.
+The emulator window is frameless and always‑on‑top — drag it by its body, **right‑click** to
+resize or close (**Esc**/**Ctrl+C** quit too). Prefer local chat? Set `ROBOT_MCP=false`,
+`ollama pull qwen3.5:4b`, then run and talk to Pip in the terminal.
 
 ## Configuration
 
@@ -98,3 +101,6 @@ Rebuild the showcase GIF with `uv run docs/make_gif.py`.
 - **Blank OLED** — check SDA/SCL match `ROBOT_OLED_SDA` / `_SCL`.
 - **Drops mid‑session** — Pip self‑heals; the face resumes once the board is back.
 - **`uv sync` fails on a wheel** — `uv python pin 3.13 && uv sync`.
+
+## License & sponsoring
+see [LICENSE](LICENSE)

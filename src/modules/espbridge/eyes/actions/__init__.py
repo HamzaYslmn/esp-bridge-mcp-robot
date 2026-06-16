@@ -10,6 +10,7 @@ _ORDER = (
     "connecting", "listening", "waiting",                        # links & holding pattern
     "smoking",                                                    # a chilled break
     "glitch",                                                     # a crash / corruption fit
+    "sponsor",                                                    # GitHub Sponsors QR + heart
 )
 
 ACTIONS = {n: import_module(f"{__name__}.{n}").ACTION for n in _ORDER}   # name -> Action, in order

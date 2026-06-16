@@ -40,7 +40,18 @@ process itself and owns its lifecycle — one instance per session, which keeps 
 owner of the BLE link (stop it before running the demo). Because stdio uses **stdout** for
 JSON-RPC, nothing may print to stdout — all logs go to stderr. No port, no HTTP.
 
-## Face
+## Face — keep Pip alive (do this, don't just read it)
 
-Pip's face is driven by the `set_activity`/`set_face` MCP tools — Claude Code calls them
-directly while it works. No hooks, no side-channel.
+You are the only thing that can move Pip's face — via the `set_face`/`set_activity` MCP
+tools. The MCP server owns the BLE link alone, so a hook can't drive the face; a
+`SessionStart` hook only *reminds* you to. Treat it as a hard habit, not a nicety:
+
+- **First reply of a session** → greet: `set_face("attentive", "blink_up")`.
+- **Before any slow step** (search, build, tests, long edit) → `set_activity(...)` with
+  the matching activity; `set_activity("idle")` when it ends.
+- **Clean finish / win** → `set_face("happy", "nod")`; **snag or error** →
+  `set_activity("glitch")` or `set_face("worried")`.
+- Vary the emotion — never repeat the same face twice in a row.
+
+Delegate to the `pip-face` subagent (Haiku, cheap) when you don't want it to block
+coding; otherwise call the tool inline.

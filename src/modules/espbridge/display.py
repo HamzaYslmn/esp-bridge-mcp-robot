@@ -28,7 +28,7 @@ class WindowDisplay:
     drops straight into EyeEngine. Tk isn't thread-safe across threads, so the whole GUI lives
     in one private thread: the engine's show() just parks the latest PIL frame, and a Tk timer
     in that thread tints + scales it (NEAREST, blocky OLED pixels) and blits it. The window is
-    frameless and always-on-top; drag it by its body, Esc closes it."""
+    frameless and always-on-top; drag it by its body, right-click to resize or close (Esc quits too)."""
 
     width, height = 128, 64
     _FG, _BG = (150, 220, 255), (8, 10, 14)        # lit pixel (blue-white OLED) on near-black
@@ -40,7 +40,6 @@ class WindowDisplay:
         self._frame_ms = max(1, int(1000 / max(5, fps)))
         self._latest = None                         # newest PIL "1" frame (atomic swap)
         self._bright = 255                          # 0..255, dims the lit colour
-        self._closed = False
         self._ready = threading.Event()
         self._thread = threading.Thread(target=self._run, name="oled-window", daemon=True)
         self._thread.start()
@@ -92,7 +91,6 @@ class WindowDisplay:
         except Exception as e:                      # no Tk / no Pillow -> fail loud, not silent
             print(f"[window] cannot open OLED window ({e}); install pillow + tkinter",
                   file=sys.stderr, flush=True)
-            self._closed = True
             self._ready.set()
             return
 
@@ -104,14 +102,16 @@ class WindowDisplay:
         root.overrideredirect(True)                 # frameless: no titlebar / border
         root.attributes("-topmost", True)           # float above every other window
         root.configure(bg="#202428")                # bezel around the panel
-        self._size = self._panel_size(root)         # true physical size (or zoom) for this screen
+        self._size = self._true_size = self._panel_size(root)   # true physical size; the menu can rescale it
         self._label = tk.Label(root, bg="#000000", borderwidth=0)
         self._label.pack(padx=4, pady=4)            # thin bezel; keep the glass close to 0.96"
         self._drag = (0, 0)                          # cursor offset from the window origin
+        self._root, self._photo = root, None
+        self._build_menu(root)
         root.bind("<Button-1>", self._grab)          # drag the frameless window by its body
         root.bind("<B1-Motion>", self._drag_to)
-        root.bind("<Escape>", lambda _e: self._on_close())   # no titlebar -> Esc closes it
-        self._root, self._photo = root, None
+        root.bind("<Button-3>", self._popup)         # no titlebar -> right-click for resize / close
+        root.bind("<Escape>", lambda _e: self._quit())   # ... and Esc quits the session
         self._ready.set()
         root.after(self._frame_ms, self._tick)
         root.mainloop()
@@ -126,6 +126,33 @@ class WindowDisplay:
               file=sys.stderr, flush=True)
         return w, h
 
+    def _build_menu(self, root):
+        """Right-click menu for the frameless window: rescale the glass, or close the session."""
+        tk = self._tk
+        sizes = tk.Menu(root, tearoff=0)
+        sizes.add_command(label='True 0.96"', command=lambda: self._resize(self._true_size))
+        for k in (2, 3, 4, 6):                       # whole-pixel zoom presets of the 128x64 panel
+            sizes.add_command(label=f"{k}x  ({self.width * k}x{self.height * k})",
+                              command=lambda k=k: self._resize((self.width * k, self.height * k)))
+        self._menu = tk.Menu(root, tearoff=0)
+        self._menu.add_cascade(label="Resize", menu=sizes)
+        self._menu.add_separator()
+        self._menu.add_command(label="Close", command=self._quit)
+
+    def _popup(self, e):
+        try:
+            self._menu.tk_popup(e.x_root, e.y_root)
+        finally:
+            self._menu.grab_release()
+
+    def _resize(self, size):
+        self._size = size                            # next _tick re-renders at this size
+        x, y = self._root.winfo_x(), self._root.winfo_y()
+        self._root.geometry(f"{size[0] + 8}x{size[1] + 8}+{x}+{y}")   # +8 for the 4px bezel on each side
+
+    def _quit(self):
+        os._exit(0)                                  # close the whole session (daemon Tk can hang a clean exit)
+
     def _grab(self, e):
         self._drag = (e.x, e.y)                      # where in the window the cursor grabbed
 
@@ -134,8 +161,6 @@ class WindowDisplay:
         self._root.geometry(f"+{e.x_root - dx}+{e.y_root - dy}")
 
     def _tick(self):
-        if self._closed:
-            return
         frame = self._latest
         size = self._size
         if frame is None:
@@ -149,10 +174,6 @@ class WindowDisplay:
         self._photo = self._ImageTk.PhotoImage(img)   # keep a ref or Tk drops it
         self._label.configure(image=self._photo)
         self._root.after(self._frame_ms, self._tick)
-
-    def _on_close(self):
-        self._closed = True
-        self._root.destroy()
 
 
 class Display:
