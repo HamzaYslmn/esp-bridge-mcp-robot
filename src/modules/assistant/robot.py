@@ -5,7 +5,7 @@ import os
 import time
 
 from modules.assistant.tools import build_tools
-from modules.espbridge.display import NullDisplay, connect_display
+from modules.espbridge.display import NullDisplay, WindowDisplay, connect_display
 from modules.espbridge.eyes import ACTIONS, GESTURES, MOODS, EyeEngine
 
 
@@ -13,7 +13,7 @@ class Robot:
     def __init__(self, *, no_display=False):
         self.bridge_mgr = None
         if no_display:
-            self.oled = NullDisplay()
+            self.oled = WindowDisplay()      # emulate the 128x64 OLED on screen -- no board
         else:
             try:
                 self.bridge_mgr, self.oled = connect_display()

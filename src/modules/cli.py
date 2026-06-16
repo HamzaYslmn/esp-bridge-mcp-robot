@@ -9,11 +9,13 @@ console script, so `uvx --from git+<repo> pip-robot` runs it with no checkout.
     ROBOT_MCP=false pip-robot # same, via env
     pip-robot demo            # menu: play any mood / gesture / activity
     pip-robot demo g13        # render a 30s GIF of menu item 13 (develop with no OLED)
-    pip-robot --no-display    # no hardware (test)
+    pip-robot --no-display    # no board: emulate the 128x64 OLED in a desktop window
+    pip-robot demo --no-display  # play the demo menu live in that window
 """
 from __future__ import annotations
 
 import os
+import signal
 import sys
 from pathlib import Path
 
@@ -31,20 +33,36 @@ load_dotenv(_SRC / ".env.example")               # repo defaults; no-op once ins
 from modules.assistant.robot import Robot
 
 
+def _on(name, default=""):
+    return os.getenv(name, default).lower() in ("1", "true", "yes", "on")
+
+
 def main():
     args = sys.argv[1:]
-    mcp = os.getenv("ROBOT_MCP", "true").lower() in ("1", "true", "yes", "on")
-    with Robot(no_display="--no-display" in args) as robot:
+    mcp = _on("ROBOT_MCP", "true")
+    # No board on this machine? Pass --no-display, or set ROBOT_NO_DISPLAY=true so the MCP
+    # server Claude Code spawns runs against the on-screen OLED emulator (no CLI flag needed).
+    no_display = _on("ROBOT_NO_DISPLAY") or "--no-display" in args
+    robot = Robot(no_display=no_display)
+    # Ctrl+C with the Tk emulator up: on Windows Tcl grabs the console (WindowDisplay re-traps it);
+    # on Unix re-assert Python's handler so a terminal Ctrl+C still raises KeyboardInterrupt here.
+    if no_display and sys.platform != "win32":
+        signal.signal(signal.SIGINT, signal.default_int_handler)
+    try:
         if "demo" in args:
             cap = next((a for a in args if a != "demo" and a[:1] == "g"), None)   # demo g13
             robot.demo(capture=cap)
-        elif "ollama" in args or "chat" in args:
-            robot.run_chat()   # explicit chat, regardless of ROBOT_MCP
-        elif mcp:
+        elif "ollama" in args or "chat" in args or not mcp:
+            robot.run_chat()
+        else:
             from modules.mcp_server import serve
             serve(robot)   # MCP over stdio; Claude Code spawns and owns this process
-        else:
-            robot.run_chat()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        robot.shutdown()
+        os._exit(0)        # the daemon Tk thread's live Tcl interpreter can hang a normal exit
+                           # (so Ctrl+C looks dead) -- force the process down after cleanup
 
 
 if __name__ == "__main__":

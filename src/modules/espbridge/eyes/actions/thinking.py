@@ -3,6 +3,9 @@ import math
 
 from ..spec import Action
 
+_TOKENS = ("E=mc^2", "a^2+b^2=c^2", "F=ma", "v=d/t", "2^10", "i^2=-1", "dx/dt",
+           "3.14", "1.618", "9.8", "42", "404", "1337", "O(n)", "?")
+
 
 def _formula(d, x, y, text):   # draw a short formula; a '^' raises the next char as a superscript
     cx = x
@@ -19,14 +22,12 @@ def _pose(now):   # gaze up at the floating symbols, slow wander
 
 
 def _overlay(d, W, H, now, ox=0.0, oy=0.0):  # nerdy tokens drift up -- "thinking" ('^' = superscript)
-    tokens = ("E=mc^2", "a^2+b^2=c^2", "F=ma", "v=d/t", "2^10", "i^2=-1", "dx/dt",
-              "3.14", "1.618", "9.8", "42", "404", "1337", "O(n)", "?")
     for i in range(4):
         t = (now * 0.4 + i / 4) % 1.0                   # 0..1 rise progress
         y = H - 10 - t * (H - 16)                       # float up the screen
-        ti = (i * 3 + int(now * 0.4 + i / 4)) % len(tokens)
+        ti = (i * 3 + int(now * 0.4 + i / 4)) % len(_TOKENS)
         x = 6 + i * (W - 50) / 3 + math.sin(now * 1.1 + i * 2) * 5
-        _formula(d, x, y, tokens[ti])
+        _formula(d, x, y, _TOKENS[ti])
 
 
 ACTION = Action("thinking", mood="focused", pose=_pose, overlay=_overlay)

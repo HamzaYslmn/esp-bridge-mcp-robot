@@ -5,6 +5,23 @@ from PIL import Image, ImageDraw, ImageFilter
 
 from ..spec import Action
 
+_rnd = lambda n: (math.sin(n * 12.9898) * 43758.5453) % 1.0     # cheap deterministic hash 0..1
+
+
+def _make_spectrum():
+    # seven swells at random lengths/speeds/phases, built once -- summed live they never repeat,
+    # so the surface is always alive: crests wander, overtake and merge. (k, omega, phase, base-amp);
+    # long waves run faster -- deep-water dispersion omega = sqrt(g*k).
+    waves = []
+    for i in range(7):
+        k = 2 * math.pi / (15 + _rnd(i) * 90)                  # random 15..105px wavelength
+        waves.append((k, math.sqrt(5.0 * k) * (0.9 + 0.2 * _rnd(i + 13)),
+                      _rnd(i + 23) * 6.283, 0.25 + 0.8 * _rnd(i + 7)))
+    return waves
+
+
+_SPECTRUM = _make_spectrum()   # constant; only each wave's amplitude rides the wind, scaled per frame
+
 
 def _pose(now):   # gaze down at the container-whale bobbing on the swell, drifting with it
     return math.sin(now * 0.25) * 4, 7 + math.sin(now * 1.7) * 1.2, 1.0
@@ -15,25 +32,17 @@ def _overlay(d, W, H, now, ox=0.0, oy=0.0):  # the Docker whale -- a 'D' stacked
     # from ever looking periodic. 0 = glassy calm, 1 = choppy gale -> sets how tall the waves run.
     sea_at = lambda t: max(0.0, min(1.0, 0.5 + 0.34 * math.sin(t * 0.06) + 0.16 * math.sin(t * 0.015 + 1.3)))
     sea, wl = sea_at(now), H - 4                                   # wind 0..1, and the mean waterline
-
-    # seven swells at random lengths/speeds/phases -- summed they never repeat, so the surface is
-    # always alive: crests wander, overtake and merge. long waves run faster (deep-water dispersion).
-    rnd = lambda n: (math.sin(n * 12.9898) * 43758.5453) % 1.0     # cheap deterministic hash 0..1
-    waves = []
-    for i in range(7):
-        k = 2 * math.pi / (15 + rnd(i) * 90)                       # random 15..105px wavelength
-        a = (0.25 + 0.8 * rnd(i + 7)) * (0.4 + sea)                # taller as the wind builds
-        waves.append((a, k, math.sqrt(5.0 * k) * (0.9 + 0.2 * rnd(i + 13)), rnd(i + 23) * 6.283))
-    height = lambda x: sum(a * math.sin(k * x - w * now + p) for a, k, w, p in waves)
+    amp = 0.4 + sea                                                # the wind scales every wave's height
+    height = lambda x: sum(ba * amp * math.sin(k * x - w * now + ph) for k, w, ph, ba in _SPECTRUM)
     surf = lambda x: wl + height(x)                               # the live, multi-wave sea surface
 
     # the hull drifts downwind: right as the sea builds, easing back left as it calms (with inertia,
     # so the berth trails the weather by a beat). then each wave's orbit nudges it fore-and-aft.
     berth = W / 2 + (sea_at(now - 3.0) - 0.5) * 34                # calm -> left of centre, building -> right
-    cx = berth + sum(a * math.cos(k * berth - w * now + p) for a, k, w, p in waves) * 0.5
+    cx = berth + sum(ba * amp * math.cos(k * berth - w * now + ph) for k, w, ph, ba in _SPECTRUM) * 0.5
     sy = surf(cx)                                                 # floats on whatever wave is under it (buoyancy)
-    pitch = math.degrees(math.atan(sum(a * k * math.cos(k * cx - w * now + p)
-                                       for a, k, w, p in waves))) * 0.45  # tilts to the slope -> rolls hard in chop
+    pitch = math.degrees(math.atan(sum(ba * amp * k * math.cos(k * cx - w * now + ph)
+                                       for k, w, ph, ba in _SPECTRUM))) * 0.45  # tilts to the slope -> rolls hard in chop
 
     # paint the whale on a scratch layer: lets us pitch it, clip its belly at the water, then stamp
     # a 1px black outline so its white hull stays distinct from the white eyes

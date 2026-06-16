@@ -13,8 +13,6 @@ _ORDER = (
     "nod", "refuse", "acknowledge",
     # expressive wobbles
     "laugh", "excited", "roll", "shiver", "pop", "squint", "cross_eyes",
-    # crash fit
-    "glitch",
 )
 
 GESTURES = {n: import_module(f"{__name__}.{n}").GESTURE for n in _ORDER}   # name -> Gesture, in order

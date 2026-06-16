@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import os
+import sys
+import threading
 
 
 class NullDisplay:
@@ -17,6 +19,140 @@ class NullDisplay:
 
     def clear(self):
         pass
+
+
+class WindowDisplay:
+    """A 0.96" 128x64 OLED emulated in a desktop window -- develop/run Pip with no board.
+
+    Same duck-typed panel API as Display/NullDisplay (width/height/show/contrast/clear), so it
+    drops straight into EyeEngine. Tk isn't thread-safe across threads, so the whole GUI lives
+    in one private thread: the engine's show() just parks the latest PIL frame, and a Tk timer
+    in that thread tints + scales it (NEAREST, blocky OLED pixels) and blits it. The window is
+    frameless and always-on-top; drag it by its body, Esc closes it."""
+
+    width, height = 128, 64
+    _FG, _BG = (150, 220, 255), (8, 10, 14)        # lit pixel (blue-white OLED) on near-black
+
+    _DIAG_IN = 1.4                                 # the panel's advertised diagonal (original 0.96")
+
+    def __init__(self, *, fps=24):
+        self._size = None                           # (w, h) px, fixed once the screen PPI is known
+        self._frame_ms = max(1, int(1000 / max(5, fps)))
+        self._latest = None                         # newest PIL "1" frame (atomic swap)
+        self._bright = 255                          # 0..255, dims the lit colour
+        self._closed = False
+        self._ready = threading.Event()
+        self._thread = threading.Thread(target=self._run, name="oled-window", daemon=True)
+        self._thread.start()
+        self._ready.wait(5.0)                       # let the window come up before the engine drives it
+
+    # ----------------------------------------------------------- panel API
+    def show(self, image=None):
+        if image is not None:
+            self._latest = image.copy()
+
+    def contrast(self, value):
+        self._bright = max(0, min(255, int(value)))
+
+    def clear(self):
+        self._latest = None
+
+    # --------------------------------------------------------- GUI thread
+    @staticmethod
+    def _make_dpi_aware():
+        """Windows: stop the OS from up-scaling our window so its pixel size is honoured and
+        winfo_fpixels reports the real (scaled) DPI instead of a virtualised 96. No-op elsewhere."""
+        try:
+            import ctypes
+            try:
+                ctypes.windll.shcore.SetProcessDpiAwareness(2)   # per-monitor aware
+            except Exception:
+                ctypes.windll.user32.SetProcessDPIAware()        # older Windows fallback
+        except Exception:
+            pass                                                 # not Windows / no ctypes
+
+    def _trap_ctrl_c(self):
+        """Tcl installs a Windows console handler that swallows Ctrl+C (CPython #94296), so the
+        terminal can no longer interrupt us. Register our own *after* Tk -- Windows fires handlers
+        newest-first, so ours wins -- turning Ctrl+C / Break / console-close into an immediate exit.
+        No-op off Windows, where Tk leaves Ctrl+C alone."""
+        try:
+            import ctypes
+            from ctypes import wintypes
+            handler = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.DWORD)(lambda _ctrl: os._exit(0))
+            self._ctrl_handler = handler                         # keep a ref or the GC drops it and Windows ignores it
+            ctypes.windll.kernel32.SetConsoleCtrlHandler(handler, True)
+        except Exception:
+            pass                                                 # not Windows / no console / no ctypes
+
+    def _run(self):
+        try:
+            import tkinter as tk
+            from PIL import Image, ImageTk
+        except Exception as e:                      # no Tk / no Pillow -> fail loud, not silent
+            print(f"[window] cannot open OLED window ({e}); install pillow + tkinter",
+                  file=sys.stderr, flush=True)
+            self._closed = True
+            self._ready.set()
+            return
+
+        self._make_dpi_aware()                      # must run before the first Tk window
+        self._tk, self._Image, self._ImageTk = tk, Image, ImageTk
+        root = tk.Tk()
+        self._trap_ctrl_c()                         # Tcl just stole Ctrl+C from the terminal -- take it back
+        root.title("Pip - 128x64 OLED (emulator)")
+        root.overrideredirect(True)                 # frameless: no titlebar / border
+        root.attributes("-topmost", True)           # float above every other window
+        root.configure(bg="#202428")                # bezel around the panel
+        self._size = self._panel_size(root)         # true physical size (or zoom) for this screen
+        self._label = tk.Label(root, bg="#000000", borderwidth=0)
+        self._label.pack(padx=4, pady=4)            # thin bezel; keep the glass close to 0.96"
+        self._drag = (0, 0)                          # cursor offset from the window origin
+        root.bind("<Button-1>", self._grab)          # drag the frameless window by its body
+        root.bind("<B1-Motion>", self._drag_to)
+        root.bind("<Escape>", lambda _e: self._on_close())   # no titlebar -> Esc closes it
+        self._root, self._photo = root, None
+        self._ready.set()
+        root.after(self._frame_ms, self._tick)
+        root.mainloop()
+
+    def _panel_size(self, root):
+        """The real 0.96" glass in pixels for this screen (2:1 aspect splits the diagonal). Tk's
+        DPI tracks the OS scaling, not the monitor's true density -- set ROBOT_SCREEN_PPI to nail it."""
+        h_in = self._DIAG_IN / (5 ** 0.5)            # diag^2 = (2h)^2 + h^2 = 5h^2
+        ppi = float(os.getenv("ROBOT_SCREEN_PPI") or root.winfo_fpixels("1i"))
+        w, h = max(1, round(2 * h_in * ppi)), max(1, round(h_in * ppi))
+        print(f"[window] OLED at ~{ppi:.0f} ppi -> {w}x{h}px; set ROBOT_SCREEN_PPI to calibrate",
+              file=sys.stderr, flush=True)
+        return w, h
+
+    def _grab(self, e):
+        self._drag = (e.x, e.y)                      # where in the window the cursor grabbed
+
+    def _drag_to(self, e):
+        dx, dy = self._drag
+        self._root.geometry(f"+{e.x_root - dx}+{e.y_root - dy}")
+
+    def _tick(self):
+        if self._closed:
+            return
+        frame = self._latest
+        size = self._size
+        if frame is None:
+            img = self._Image.new("RGB", size, self._BG)
+        else:
+            fg = tuple(c * self._bright // 255 for c in self._FG)
+            mask = frame.convert("L").point(lambda v: 255 if v else 0)
+            lit = self._Image.composite(self._Image.new("RGB", frame.size, fg),
+                                        self._Image.new("RGB", frame.size, self._BG), mask)
+            img = lit.resize(size, self._Image.NEAREST)
+        self._photo = self._ImageTk.PhotoImage(img)   # keep a ref or Tk drops it
+        self._label.configure(image=self._photo)
+        self._root.after(self._frame_ms, self._tick)
+
+    def _on_close(self):
+        self._closed = True
+        self._root.destroy()
 
 
 class Display:

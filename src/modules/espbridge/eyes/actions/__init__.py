@@ -9,6 +9,7 @@ _ORDER = (
     "working", "editing", "debugging", "building", "testing", "deploying",
     "connecting", "listening", "waiting",                        # links & holding pattern
     "smoking",                                                    # a chilled break
+    "glitch",                                                     # a crash / corruption fit
 )
 
 ACTIONS = {n: import_module(f"{__name__}.{n}").ACTION for n in _ORDER}   # name -> Action, in order

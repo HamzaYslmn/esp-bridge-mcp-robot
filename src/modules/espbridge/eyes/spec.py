@@ -27,18 +27,19 @@ class Mood:
 
 @dataclass(frozen=True)
 class Gesture:
-    """A one-shot move: a centred `blink`, OR an enveloped `motion` (+ optional on-frame fx)."""
+    """A one-shot move: a centred `blink`, OR an enveloped `motion`."""
     name: str
     dur: float                           # seconds the move lasts
     motion: Optional[Callable] = None    # fn(p, env) -> (dx, dy, conv, sw, sh[, bias])
     blink: Optional[tuple] = None        # (eyes set, closes) -- lid-only, no motion fn
-    fx: Optional[Callable] = None        # gesture-time painter (d, W, H, ph, env), on top
 
 
 @dataclass(frozen=True)
 class Action:
-    """A looping task status: a gaze `pose` + a fitting `mood` face + an `overlay` prop."""
+    """A looping task status: a gaze `pose` + a fitting `mood` face + an `overlay` prop.
+    Most loop until set to idle; an optional `expired` lets one decide to self-end."""
     name: str
     mood: Optional[str] = None           # the mood whose face it wears
     pose: Optional[Callable] = None      # fn(now) -> (gaze_x, gaze_y, height_mult)
     overlay: Optional[Callable] = None   # looping prop (d, W, H, now, ox, oy)
+    expired: Optional[Callable] = None   # fn(now, start) -> True once it should end itself (else loops)

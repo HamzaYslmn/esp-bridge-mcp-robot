@@ -6,13 +6,12 @@ readme = "README.md"
 # python-esp-bridge needs 3.10+; 3.13 lower bound keeps our own deps happy.
 requires-python = ">=3.13"
 dependencies = [
-    "ollama>=0.4",
-    "python-dotenv>=1.0",
-    "python-esp-bridge[all]>=0.15.0",
+    "fastmcp>=3",                       # MCP server (default mode) over stdio
+    "ollama>=0.4",                      # local chat backend (ROBOT_MCP=false)
+    "pillow>=10",                       # eye rendering, OLED-window emulator, GIF capture
+    "python-dotenv>=1.0",              # .env loading
+    "python-esp-bridge[all]>=0.15.0",  # ESP32 OLED over Bluetooth (BlueZ on Linux, WinRT on Windows)
 ]
-
-[project.optional-dependencies]
-dev = ["pillow>=10"]   # headless GIF capture (demo gNN) + docs/make_gif.py
 
 [project.scripts]
 pip-robot = "modules.cli:main"

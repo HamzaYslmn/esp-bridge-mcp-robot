@@ -98,6 +98,7 @@ class EyeEngine:
         self._pending = None                             # mood waiting for the layer to free
         self.look_x = self.look_y = 0.0                  # resting gaze target
         self._blink = self._gesture = self._activity = None
+        self._activity_start = 0.0                        # clock time the current activity began
         self._next_blink = self._next_idle = 0.0
         self._stop = threading.Event()
         self._thread = None
@@ -147,6 +148,7 @@ class EyeEngine:
             self.set_mood(a.mood)                        # takes the lock itself
         with self._lock:
             self._activity = act if a else None
+            self._activity_start = self._clock()
 
     # ----------------------------------------------------------- frame loop
     def _begin_blink(self, now, spec):
@@ -176,11 +178,10 @@ class EyeEngine:
         frame = 1.0 / self.fps
         while not self._stop.is_set():
             now = self._clock()
-            img = self.step(now)
             try:
-                self._show(img)
+                self._show(self.step(now))
             except Exception:
-                pass                                      # transient BLE/I2C hiccup -- keep going
+                pass                                      # a bad effect frame or BLE hiccup -> skip it, keep the loop alive
             time.sleep(max(0.0, frame - (self._clock() - now)))
 
     def _schedule(self, now):
@@ -190,6 +191,10 @@ class EyeEngine:
                 self._blink = None
             if self._gesture and now - self._gesture["start"] > self._gesture["dur"]:
                 self._gesture = None
+            if self._activity:                               # let an activity that defines `expired` self-end
+                expired = self.ACTIONS[self._activity].expired
+                if expired and expired(now, self._activity_start):
+                    self._activity = None                    # it decided it's done -> back to normal
             free = not (self._blink or self._gesture)
             if free and self._pending:                    # masked deferred mood swap
                 self.mood, self._pending = self._pending, None
@@ -298,17 +303,14 @@ class EyeEngine:
         if paint:                                         # lids are the eye's shape -> keep them through a blink
             paint(self._draw, ex, ey, w, h, r, right)
 
-    def _draw_extras(self, now, spec, act, g):
-        """Mood decor, the activity overlay, then any gesture FX."""
+    def _draw_extras(self, now, spec, act):
+        """Mood decor, then the activity overlay."""
         d = self._draw
         if spec.decor:
             spec.decor(d, self.W, self.H, now, self.gx, self.gy)
         a = self.ACTIONS.get(act)
         if a and a.overlay:
             a.overlay(d, self.W, self.H, now, self.gx, self.gy)      # pass gaze so a prop rides the face
-        if g and (fx := self.GESTURES[g["kind"]].fx):                # e.g. the glitch corruption
-            ph = min(1.0, (now - g["start"]) / g["dur"])
-            fx(d, self.W, self.H, ph, math.sin(ph * math.pi))
 
     def _render(self, now):
         with self._lock:                                 # snapshot; dicts are never mutated in place
@@ -329,5 +331,5 @@ class EyeEngine:
             for sx, openness, right in ((x0, ol, False),
                                         (x0 + self.eye_w + self.gap, or_, True)):
                 self._draw_eye(sx, y0, openness, right, tilt, bias, conv, sw, sh, breath, paint)
-        self._draw_extras(now, spec, act, g)
+        self._draw_extras(now, spec, act)
         return self._img

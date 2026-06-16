@@ -31,10 +31,7 @@ def build_tools(eyes, mgr=None):
                 wink_right;
             gaze:    look_left, look_right, look_up, look_down, scan, scan_sweep;
             react:   nod, refuse, acknowledge, laugh, excited, roll, shiver,
-                cross_eyes, pop, squint;
-            glitch:  a ~1.4s crash fit -- the eyes tear through datamosh shifts,
-                scanlines, static, ghosting, code-rain and invert flashes, then
-                settle (good for an error/exception).
+                cross_eyes, pop, squint.
             (default none plays nothing.)
         """
         eyes.set_mood(emotion)
@@ -49,10 +46,11 @@ def build_tools(eyes, mgr=None):
             (running a task), editing (writing code), debugging (hunting a bug),
             building (compiling/assembling), testing (running tests), deploying
             (shipping/launching), connecting (establishing a link), listening,
-            waiting (idle for input/output),
-            smoking (a chilled break), or idle to stop. Set it before a slow
-            step, idle when done. Each busy activity also puts on a fitting
-            face, so no need to set one too.
+            waiting (idle for input/output), smoking (a chilled break),
+            glitch (a crash/corruption fit -- datamosh, scanlines, ghosting,
+            code-rain, invert flashes; good for an error/exception), or idle to
+            stop. Set it before a slow step, idle when done. Each busy activity
+            also puts on a fitting face, so no need to set one too.
         """
         eyes.set_activity(activity)
         return f"activity: {activity}"
