@@ -10,15 +10,13 @@ from .primitives import smoothstep
 
 _PI = math.pi
 
-# name -> (eyes, duration, closes, anchor); anchor: .5 centred, 1 from top, 0 from bottom
+# name -> (eyes, duration, closes); the lids always shut centred
 BLINKS = {
-    "blink":        ({"left", "right"}, 0.20, 1, 0.5),
-    "double_blink": ({"left", "right"}, 0.44, 2, 0.5),
-    "wink":         ({"right"}, 0.6, 1, 0.5),
-    "wink_left":    ({"left"}, 0.6, 1, 0.5),
-    "wink_right":   ({"right"}, 0.6, 1, 0.5),
-    "blink_down":   ({"left", "right"}, 0.22, 1, 1.0),  # lids fall from the top
-    "blink_up":     ({"left", "right"}, 0.22, 1, 0.0),  # lids close from the bottom
+    "blink":        ({"left", "right"}, 0.20, 1),
+    "double_blink": ({"left", "right"}, 0.44, 2),
+    "wink":         ({"right"}, 0.6, 1),
+    "wink_left":    ({"left"}, 0.6, 1),
+    "wink_right":   ({"right"}, 0.6, 1),
 }
 
 
@@ -44,6 +42,9 @@ GESTURES_FN = {
     "look_right":  (1.2, _look(8, 0, 0.2)),
     "look_up":     (1.2, _look(0, -10)),
     "look_down":   (1.2, _look(0, 10)),
+    # -- directional blinks: glance up/down as the lids snap shut, then reopen --
+    "blink_down":  (0.5, lambda p, e: (0.0, 7 * e, 0.0, 1.0, 1.0 - 0.9 * e)),
+    "blink_up":    (0.5, lambda p, e: (0.0, -7 * e, 0.0, 1.0, 1.0 - 0.9 * e)),
     "scan":        (1.3, lambda p, e: (math.sin(p * _PI * 2) * 16 * e, 0.0, 0.0, 1.0, 1.0)),   # darting back-and-forth
     "scan_sweep":  (1.6, lambda p, e: (-math.sin(p * _PI * 2) * 15, 0.0, 0.0, 1.0, 1.0)),      # one smooth sensor sweep
     # -- affirm / deny / acknowledge (decaying envelope -> punch, then settle) --
