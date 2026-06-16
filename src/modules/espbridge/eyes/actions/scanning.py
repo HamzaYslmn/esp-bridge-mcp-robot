@@ -7,4 +7,4 @@ def _pose(now):   # step left->right then down a line, settling each stop
     return (int(line % 1.0 * 4) / 3 * 2 - 1) * 13, (int(line) % 3 - 1) * 5, 1.0
 
 
-ACTION = Action("scanning", mood="neutral", pose=_pose)
+ACTION = Action("scanning", mood="attentive", pose=_pose)

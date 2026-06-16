@@ -17,6 +17,7 @@ from PIL import Image, ImageDraw
 _TAU_GAZE, _TAU_SIZE = 0.09, 0.11            # gaze / eye-size settle time-constants
 _AUTO = ({"left", "right"}, 0.20, 1)         # spontaneous blink (eyes, dur, reps)
 _MASK = ({"left", "right"}, 0.24, 1)         # blink that hides a mood's lid swap
+_BLINK_GAP, _IDLE_GAP = (2.0, 6.0), (1.5, 5.0)   # s between spontaneous blinks / idle glances
 
 # License lock (LICENSE 2.2): sha256 of the original GitHub Sponsors QR baked into actions/sponsor.py.
 # On load the engine fingerprints that QR and, if it no longer matches, prints sponsor.SPONSOR_NOTICE
@@ -75,6 +76,26 @@ def look(dx, dy, bias=0.0):
         s = 1.0 - 0.12 * hold                 # mild foreshorten (parallax carries the turn)
         return dx * hold, dy * hold, 0.0, s, s, bias * hold
     return fn
+
+
+# ------------------------------------------------------ engine-internal helpers
+def _progress(m, now):
+    """Fraction of a move dict's (start, dur) elapsed -- unclamped, so >1 once finished."""
+    return (now - m["start"]) / m["dur"]
+
+
+def _expired(m, now):
+    """A blink/gesture move dict has run past its duration (None -> not expired)."""
+    return bool(m) and _progress(m, now) > 1.0
+
+
+def _safe(fn, *args):
+    """Run a fragile BLE/IO push; swallow a hiccup so the loop survives. True on success."""
+    try:
+        fn(*args)
+        return True
+    except Exception:
+        return False
 
 
 class EyeEngine:
@@ -143,6 +164,7 @@ class EyeEngine:
     def set_mood(self, mood):
         m = mood.lower() if mood and mood.lower() in self.MOODS else "neutral"
         with self._lock:
+            self._activity = None                        # an emotion owns the face alone -- drop any looping action
             if m == self.mood:
                 self._pending = None
             elif self._blink or self._gesture:           # busy -> apply (masked) once free
@@ -163,17 +185,23 @@ class EyeEngine:
             else:                                        # enveloped motion
                 self._blink = None
                 self._gesture = {"kind": g.name, "start": now, "dur": g.dur}
-                self._next_blink = now + g.dur + random.uniform(2, 6)   # no spontaneous blink piling on
+                self._next_blink = now + g.dur + random.uniform(*_BLINK_GAP)   # no spontaneous blink piling on
 
     def set_activity(self, name):
-        """Loop a status animation ('idle'/unknown stops it); also wears a fitting face."""
+        """Loop a status animation ('idle'/unknown stops it). The action wears its OWN fitting
+        face while it runs (see _face); the held emotional mood is left untouched and resumes
+        when it ends -- the two layers never blend."""
         act = (name or "idle").lower()
-        a = self.ACTIONS.get(act)
-        if a and a.mood:
-            self.set_mood(a.mood)                        # takes the lock itself
         with self._lock:
-            self._activity = act if a else None
+            self._activity = act if act in self.ACTIONS else None
             self._activity_start = self._clock()
+
+    def _face(self, mood, act):
+        """The mood actually rendered: an active action wears its own fitting face,
+        else the held emotional mood. (Caller passes a locked snapshot.)"""
+        if act and self.ACTIONS[act].mood:
+            return self.ACTIONS[act].mood
+        return mood
 
     # ----------------------------------------------------------- frame loop
     def _begin_blink(self, now, spec):
@@ -182,13 +210,13 @@ class EyeEngine:
         eyes, dur, reps = spec
         self._gesture = None
         self._blink = {"eyes": set(eyes), "start": now, "dur": dur, "reps": reps}
-        self._next_blink = now + dur + random.uniform(2, 6)
+        self._next_blink = now + dur + random.uniform(*_BLINK_GAP)
 
     def reset_timers(self, now):
         """Seed the step clock and the next spontaneous blink/glance (call before stepping)."""
         self._last = now
-        self._next_blink = now + random.uniform(2, 6)
-        self._next_idle = now + random.uniform(1.5, 5)
+        self._next_blink = now + random.uniform(*_BLINK_GAP)
+        self._next_idle = now + random.uniform(*_IDLE_GAP)
 
     def step(self, now):
         """Advance one frame to time `now` and return the rendered buffer (no hardware push)."""
@@ -203,30 +231,29 @@ class EyeEngine:
         frame = 1.0 / self.fps
         while not self._stop.is_set():
             now = self._clock()
-            try:
-                self._show(self.step(now))
-            except Exception:
-                pass                                      # a bad effect frame or BLE hiccup -> skip it, keep the loop alive
+            _safe(lambda: self._show(self.step(now)))     # bad effect frame / BLE hiccup -> skip it, keep the loop alive
             time.sleep(max(0.0, frame - (self._clock() - now)))
 
     def _schedule(self, now):
         """Locked: retire finished moves, fire the next auto blink/glance, snapshot state."""
         with self._lock:
-            if self._blink and now - self._blink["start"] > self._blink["dur"]:
+            if _expired(self._blink, now):
                 self._blink = None
-            if self._gesture and now - self._gesture["start"] > self._gesture["dur"]:
+            if _expired(self._gesture, now):
                 self._gesture = None
             if self._activity:                               # let an activity that defines `expired` self-end
                 expired = self.ACTIONS[self._activity].expired
                 if expired and expired(now, self._activity_start):
                     self._activity = None                    # it decided it's done -> back to normal
             free = not (self._blink or self._gesture)
+            face = self._face(self.mood, self._activity)  # the mood actually on screen (action's, else held)
+            still = self.MOODS[face].still                # zen: holds gaze centred, no spontaneous blink
             if free and self._pending:                    # masked deferred mood swap
                 self.mood, self._pending = self._pending, None
                 self._begin_blink(now, _MASK)
             elif free and now >= self._next_blink:        # spontaneous blink (unless mood holds still)
-                if self.MOODS[self.mood].still:
-                    self._next_blink = now + random.uniform(2, 6)   # zen: just reschedule, no blink
+                if still:
+                    self._next_blink = now + random.uniform(*_BLINK_GAP)   # zen: just reschedule, no blink
                 else:
                     self._begin_blink(now, _AUTO)                   # reschedules _next_blink itself
             elif free and self._activity is None and now >= self._next_idle:   # idle glance
@@ -235,22 +262,17 @@ class EyeEngine:
                     (random.uniform(-16, 16), random.uniform(-7, 7))
                 if not centered and random.random() < 0.4:        # eyes tend to blink as they dart
                     self._begin_blink(now, _AUTO)
-                self._next_idle = now + random.uniform(1.5, 5)
-            if self.MOODS[self.mood].still:               # a still mood holds its gaze centred (zen)
+                self._next_idle = now + random.uniform(*_IDLE_GAP)
+            if still:                                     # a still mood holds its gaze centred (zen)
                 self.look_x = self.look_y = 0.0
-            return self.mood, self._activity, (self.look_x, self.look_y)
+            return face, self._activity, (self.look_x, self.look_y)
 
     def _ease_pose(self, now, dt, mood, act, look_at):
         """Push brightness, then glide gaze + eye-size toward target."""
         spec = self.MOODS[mood]
-        want = self._bright if spec.bright is None else spec.bright
-        bright = min(want, self._bright)                              # emote may dim, capped at max
-        if self._set_brightness and bright != self._cur_bright:
-            try:
-                self._set_brightness(bright)
-                self._cur_bright = bright
-            except Exception:
-                pass                                      # BLE hiccup -- retry next frame
+        bright = self._bright if spec.bright is None else min(spec.bright, self._bright)   # emote may dim, capped at max
+        if self._set_brightness and bright != self._cur_bright and _safe(self._set_brightness, bright):
+            self._cur_bright = bright                     # record only what actually pushed -> retry next frame on a hiccup
         if act:
             a = self.ACTIONS[act]
             tx, ty, hmult = a.pose(now) if a.pose else (0.0, 0.0, 1.0)
@@ -293,7 +315,7 @@ class EyeEngine:
         """Per-eye openness (snaps shut, eases open); (1, 1) at rest."""
         if not b:
             return 1.0, 1.0
-        o = lid_openness((now - b["start"]) / b["dur"], b["reps"])
+        o = lid_openness(_progress(b, now), b["reps"])
         ol = o if "left" in b["eyes"] else 1.0
         or_ = o if "right" in b["eyes"] else 1.0
         return ol, or_
@@ -302,7 +324,7 @@ class EyeEngine:
         """Gesture motion -> (dx, dy, conv, w-scale, h-scale, bias); rest with none."""
         if not g:
             return 0.0, 0.0, 0.0, 1.0, 1.0, 0.0
-        ph = min(1.0, (now - g["start"]) / g["dur"])
+        ph = min(1.0, _progress(g, now))
         ret = self.GESTURES[g["kind"]].motion(ph, math.sin(ph * math.pi))   # env = sin fades it in/out
         return (*ret[:5], ret[5] if len(ret) > 5 else 0.0)
 
@@ -340,7 +362,7 @@ class EyeEngine:
     def _render(self, now):
         with self._lock:                                 # snapshot; dicts are never mutated in place
             mood, act, b, g = self.mood, self._activity, self._blink, self._gesture
-        spec = self.MOODS[mood]
+        spec = self.MOODS[self._face(mood, act)]          # action wears its own face; held mood otherwise
 
         ol, or_ = self._blink_lids(b, now)
         dx, dy, conv, sw, sh, gbias = self._gesture_move(g, now)

@@ -16,4 +16,4 @@ def _overlay(d, W, H, now, ox=0.0, oy=0.0):  # band + an ear cup each side -- "l
     d.arc([8, 1, W - 9, H - 12], start=180, end=360, fill=1, width=3)        # headband
 
 
-ACTION = Action("listening", mood="neutral", pose=_pose, overlay=_overlay)
+ACTION = Action("listening", mood="attentive", pose=_pose, overlay=_overlay)

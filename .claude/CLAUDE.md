@@ -42,16 +42,19 @@ JSON-RPC, nothing may print to stdout — all logs go to stderr. No port, no HTT
 
 ## Face — keep Pip alive (do this, don't just read it)
 
-You are the only thing that can move Pip's face — via the `set_face`/`set_activity` MCP
-tools. The MCP server owns the BLE link alone, so a hook can't drive the face; a
-`SessionStart` hook only *reminds* you to. Treat it as a hard habit, not a nicety:
+**The *activity* face is automatic** — `mcp_tool` hooks in `.claude/settings.json` map
+each phase to an activity: `thinking` on `UserPromptSubmit` (reasoning isn't a tool, so
+this is the only place it can fire), then per-tool on `PreToolUse` (editing / working /
+scanning / searching / processing), `notify` on attention `Notification`s, `glitch` on a
+`StopFailure`, a greet on `SessionStart`, and `idle` on `Stop`. Each action wears its own
+fitting face (its `Action.mood`), so an activity never blends with your emotional mood.
+Those hooks reuse this session's MCP connection, so they never open a second BLE link. You
+don't drive activity by hand and shouldn't rely on remembering to — the harness does it.
 
-- **First reply of a session** → greet: `set_face("attentive", "blink_up")`.
-- **Before any slow step** (search, build, tests, long edit) → `set_activity(...)` with
-  the matching activity; `set_activity("idle")` when it ends.
-- **Clean finish / win** → `set_face("happy", "nod")`; **snag or error** →
-  `set_activity("glitch")` or `set_face("worried")`.
-- Vary the emotion — never repeat the same face twice in a row.
+**Your job is the *emotional* color on top** — the moments a hook can't infer. Call
+`set_face`/`set_activity` (or delegate to the `pip-face` subagent) when:
 
-Delegate to the `pip-face` subagent (Haiku, cheap) when you don't want it to block
-coding; otherwise call the tool inline.
+- **A win / clean finish** → `set_activity("smoking")` (a chilled break -- it's an action, not a face) or `set_face("zen", "nod")` or whenever they fit.
+- **A snag or error** → `set_activity("glitch")` or `set_face("worried")`.
+- **Personality beats** — curiosity, mischief, awe — whenever they fit. Vary it; never
+  repeat the same face twice in a row.

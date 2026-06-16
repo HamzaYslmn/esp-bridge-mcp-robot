@@ -105,4 +105,4 @@ def _expired(now, start):   # roll a die each 3s window; a 50% hit ends the fit,
     return k >= 1 and (math.sin((start + k * 7.31) * 12.9898) * 43758.5453) % 1.0 < _HEAL_ODD
 
 
-ACTION = Action("glitch", mood="neutral", pose=_pose, overlay=_overlay, expired=_expired)
+ACTION = Action("glitch", mood="scared", pose=_pose, overlay=_overlay, expired=_expired)

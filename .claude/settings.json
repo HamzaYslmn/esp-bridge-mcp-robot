@@ -1,10 +1,51 @@
 {
-  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": ["pip-robot"],
   "permissions": {
     "allow": [
       "mcp__pip-robot__set_face",
-      "mcp__pip-robot__set_activity"
+      "mcp__pip-robot__set_activity",
+      "mcp__pip-robot__notify"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "mcp_tool", "server": "pip-robot", "tool": "set_face", "input": { "emotion": "attentive", "gesture": "blink_up" }, "statusMessage": "Waking Pip" }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "thinking" } }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      { "matcher": "Edit|Write|NotebookEdit", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "editing" } } ] },
+      { "matcher": "Bash|PowerShell", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "working" } } ] },
+      { "matcher": "Read", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "scanning" } } ] },
+      { "matcher": "Grep|Glob", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "searching" } } ] },
+      { "matcher": "WebFetch|WebSearch", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "searching" } } ] },
+      { "matcher": "Agent", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "processing" } } ] }
+    ],
+    "Notification": [
+      { "matcher": "permission_prompt|idle_prompt|elicitation_dialog", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "notify", "input": { "reason": "needs you" } } ] }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "glitch" } }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "idle" } }
+        ]
+      }
     ]
   }
 }

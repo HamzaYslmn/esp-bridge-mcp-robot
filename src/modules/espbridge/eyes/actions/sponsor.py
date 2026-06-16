@@ -85,4 +85,4 @@ def _overlay(d, W, H, now, ox=0.0, oy=0.0):
     _kawaii_face(d, W, H, now)                             # Pip's kawaii face, resized to the right
 
 
-ACTION = Action("sponsor", mood="neutral", overlay=_overlay)
+ACTION = Action("sponsor", mood="kawaii", overlay=_overlay)   # mood is hidden under the full-screen QR; matches the kawaii face the overlay draws

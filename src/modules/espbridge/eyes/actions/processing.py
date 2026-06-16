@@ -14,4 +14,4 @@ def _overlay(d, W, H, now, ox=0.0, oy=0.0):  # a sleek arc sweeps around a ring 
     d.arc([cx - rad, cy - rad, cx + rad, cy + rad], start=a0, end=a0 + 210, fill=1, width=2)
 
 
-ACTION = Action("processing", mood="focused", pose=_pose, overlay=_overlay)
+ACTION = Action("processing", mood="wired", pose=_pose, overlay=_overlay)
