@@ -4,7 +4,7 @@ import math
 from ..engine import smoothstep
 from ..spec import Action
 
-drag_chance = 0.6    # probability of a drag per 10s window (0..1) -- set from outside to taste
+drag_chance = 0.4    # probability of a drag per 10s window (0..1) -- set from outside to taste
 _DUR = 4.2           # one drag's length (s)
 # drag beats as fractions of _DUR -- end of: draw | lower | hold breath | exhale | (raise back)
 _DRAW, _LOWER, _HOLD, _EXHALE = 0.18, 0.38, 0.46, 0.82
@@ -29,16 +29,12 @@ def _pose(now):   # the gaze tells the story: settle to draw, lift to exhale, el
         if p < _EXHALE:                                 # exhale -> gaze lifts to follow the plume up
             return drift_x * 0.5, drift_y - 6 * smoothstep((p - _HOLD) / (_EXHALE - _HOLD)), 1.0
         return drift_x, drift_y, 1.0                    # raising back -> ease to rest
-    # chilling between drags: lazy drift, with an 80%-per-10s burst of quick glances around the room
-    win = int(now / 10)
-    rnd = lambda n: (math.sin((win + 1) * 12.9898 + n * 78.233) * 43758.5453) % 1.0   # per-window hash 0..1
+    # chilling: drift + the usual idle glances -- ease to a new spot every few seconds, often just resting
+    slot = int(now / 3.4)                              # hold each glance ~3.4s, like the resting idle
+    rnd = lambda n: (math.sin((slot + 1) * 12.9898 + n * 78.233) * 43758.5453) % 1.0
     gx = gy = 0.0
-    if rnd(0) < 0.8:                                    # 80% of windows: a quick look-around (after any drag)
-        dirs = ((-15, 0), (15, 0), (0, -8), (0, 7))    # snap left, right, up, down -- the engine darts between them
-        start = 5.2 + rnd(1) * 1.6                      # begins in the chill stretch, past the drag
-        s = now % 10 - start                            # seconds into the look-around
-        if 0.0 <= s < len(dirs) * 0.4:                 # four quick glances, 0.4s each, then settle back
-            gx, gy = dirs[(int(s / 0.4) + int(rnd(2) * 4)) % 4]   # rotate the order so each look-around differs
+    if rnd(0) > 0.35:                                  # ~2/3 of slots glance somewhere, the rest rest centred
+        gx, gy = (rnd(1) * 2 - 1) * 14, (rnd(2) * 2 - 1) * 6
     return drift_x + gx, drift_y + gy, 1.0
 
 

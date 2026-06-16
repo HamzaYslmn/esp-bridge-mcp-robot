@@ -11,6 +11,7 @@ _FULL = _WORD + "..."
 _WIN = 5.0           # one decision tick: every 5 s it may speak
 _CHANCE = 0.7        # ...with this probability
 _BLINK = 1.0         # idle cursor on/off period (s) -- a lazy ~1 Hz
+_CURW = 6            # cursor cell width (px), reserved so the blink doesn't shift the line
 
 _DOT = 0.42          # dwell per dot-count while it "thinks"
 _DOT_REPS = 2        # how many 1->2->3 dot pulses before erasing
@@ -53,12 +54,13 @@ def _script(now):
 
 def _overlay(d, W, H, now, ox=0.0, oy=0.0):  # a centred ">_" that idly blinks, sometimes typing "waiting..."
     text, mode = _script(now)
-    cx, y = W / 2, H - 11
+    y = H - 11
     line = _PROMPT + text
-    x = cx - d.textlength(line)                          # right-align so the cursor stays pinned at centre
-    d.text((x, y - 1), line, fill=1)                     # prompt + typed text scrolls left under the cursor
+    tw = d.textlength(line)
+    x = round(W / 2 - (tw + _CURW) / 2)                  # centre prompt+text+cursor cell as one unit, always
+    d.text((x, y - 1), line, fill=1)
     if mode == "solid" or (mode == "blink" and (now % _BLINK) < _BLINK / 2):
-        d.rectangle([cx + 1, y + 8, cx + 6, y + 9], fill=1)  # '_' cursor, parked at centre
+        d.rectangle([x + tw + 1, y + 8, x + tw + _CURW, y + 9], fill=1)  # '_' cursor, just past the text
 
 
 ACTION = Action("waiting", mood="bored", pose=_pose, overlay=_overlay)
