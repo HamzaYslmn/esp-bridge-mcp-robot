@@ -11,7 +11,7 @@ _ORDER = (
     # focus / calm
     "focused", "zen", "wired", "chill",
     # sad / anxious / low
-    "sad", "gloomy", "worried", "nervous", "despair", "scared", "tired", "sleepy",
+    "sad", "gloomy", "worried", "nervous", "despair", "scared", "tired", "sleepy", "overheated",
     # angry / wary
     "angry", "furious", "devil", "suspicious", "skeptical",
     # dazed / goofy / off
