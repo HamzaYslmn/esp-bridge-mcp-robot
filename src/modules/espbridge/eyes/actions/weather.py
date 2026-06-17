@@ -1,8 +1,10 @@
-"""Live weather widget -- a sky glyph plus the current temperature.
+"""Live weather widget -- icon + temperature (top-left), place name (top-right).
 
-Free, no API key: location from the device IP (ipapi.co), conditions from Open-Meteo. The fetch
+All open, free, no API key: conditions from Open-Meteo, place name reverse-geocoded from
+OpenStreetMap (Nominatim), IP-fallback location from ipwho.is. Location prefers the host's real
+position (the OS location services, when the app binds one); otherwise the device IP. The fetch
 runs in a daemon thread (never blocks the render loop), caches the last good reading, refreshes
-every 15 min, and falls back to a 'no signal' glyph when offline."""
+every 15 min, shows 'no signal' when offline."""
 import json
 import math
 import threading
@@ -12,35 +14,64 @@ from PIL import ImageFont
 
 from ..spec import Action
 
-_GEO = "https://ipapi.co/json/"
+_GEO = "https://ipwho.is/"          # IP-fallback location (https, no key)
 _API = ("https://api.open-meteo.com/v1/forecast"
         "?latitude={lat}&longitude={lon}&current=temperature_2m,weather_code,is_day")
+_REV = ("https://nominatim.openstreetmap.org/reverse"     # OpenStreetMap reverse geocode (open data)
+        "?format=jsonv2&zoom=10&accept-language=en&lat={lat}&lon={lon}")
 _REFRESH = 900.0        # s between refetches once we have data
 _RETRY = 30.0           # s between retries while still offline
 _TIMEOUT = 6            # s per request
 
 try:
     _F = ImageFont.load_default(size=12)
-except TypeError:                       # ancient Pillow
-    _F = ImageFont.load_default()
+    _FS = ImageFont.load_default(size=9)    # smaller, for the place name
+except TypeError:                           # ancient Pillow
+    _F = _FS = ImageFont.load_default()
 
 _lock = threading.Lock()
-_state = {"temp": None, "code": 0, "day": 1, "at": None, "fetching": False}
+_state = {"temp": None, "code": 0, "day": 1, "place": "", "at": None, "fetching": False}
+_locate = None          # optional GPS source: locate() -> (lat, lon) | None
+
+
+def bind(locate):
+    """Wire a real location source (e.g. the host OS location); unbound -> IP geolocation."""
+    global _locate
+    _locate = locate
 
 
 def _get(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "pip-robot"})
+    # a real User-Agent is required by the Nominatim usage policy
+    req = urllib.request.Request(url, headers={"User-Agent": "pip-robot (github.com/HamzaYslmn/esp-bridge-mcp-robot)"})
     with urllib.request.urlopen(req, timeout=_TIMEOUT) as r:
         return json.load(r)
 
 
+def _where():
+    """Prefer a real GPS fix; fall back to the device IP."""
+    if _locate and (ll := _locate()):
+        return ll
+    geo = _get(_GEO)
+    return geo["latitude"], geo["longitude"]
+
+
+def _place(lat, lon):
+    """Town/city name for the fix (or "" if the reverse lookup fails -- weather still shows)."""
+    try:
+        a = _get(_REV.format(lat=lat, lon=lon)).get("address", {})
+        return (a.get("town") or a.get("city") or a.get("village") or a.get("municipality")
+                or a.get("county") or a.get("state") or "")
+    except Exception:
+        return ""
+
+
 def _fetch():
     try:
-        geo = _get(_GEO)
-        cur = _get(_API.format(lat=geo["latitude"], lon=geo["longitude"]))["current"]
+        lat, lon = _where()
+        cur = _get(_API.format(lat=lat, lon=lon))["current"]
         with _lock:
             _state.update(temp=round(cur["temperature_2m"]), code=int(cur["weather_code"]),
-                          day=int(cur.get("is_day", 1)))
+                          day=int(cur.get("is_day", 1)), place=_place(lat, lon))
     except Exception:
         pass                # keep the last good reading; overlay shows offline until one lands
     finally:
@@ -107,15 +138,16 @@ def _icon(d, cx, cy, code, day):
 def _overlay(d, W, H, now, ox=0.0, oy=0.0):
     _maybe_refresh(now)
     with _lock:
-        temp, code, day = _state["temp"], _state["code"], _state["day"]
-    cy = H - 8
-    if temp is None:                                           # offline -> slashed cloud + dashes
-        _cloud(d, 22, cy - 2)
-        d.line([13, cy + 6, 31, cy - 8], fill=1)
-        d.text((44, H - 13), "--°C", font=_F, fill=1)
+        temp, code, day, place = _state["temp"], _state["code"], _state["day"], _state["place"]
+    if temp is None:                                           # offline -> slashed cloud + dashes, top-left
+        _cloud(d, 10, 5)
+        d.line([1, 12, 19, 0], fill=1)
+        d.text((20, 0), "--°C", font=_F, fill=1)
         return
-    _icon(d, 22, cy, code, day)
-    d.text((44, H - 13), f"{temp}°C", font=_F, fill=1)
+    _icon(d, 10, 7, code, day)                                 # icon + temp, top-left
+    d.text((20, 0), f"{temp}°C", font=_F, fill=1)
+    if place:                                                  # place name, top-right
+        d.text((W - d.textlength(place, font=_FS) - 2, 1), place, font=_FS, fill=1)
 
 
 ACTION = Action("weather", mood="chill", overlay=_overlay)
