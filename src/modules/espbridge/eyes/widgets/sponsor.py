@@ -1,6 +1,6 @@
 """A thank-you screen -- an inverted GitHub Sponsors QR with Pip's kawaii face -- "sponsor".
 
-A looping action: set_activity('sponsor') and Pip shows a QR linking to
+A looping widget: set_activity('sponsor') and Pip shows a QR linking to
 https://github.com/sponsors/HamzaYslmn with the kawaii face (round eyes, blush, twinkles)
 resized into the free right half. The QR is baked in (the URL never changes) so eyes/ keeps
 no encoder dependency.
@@ -17,7 +17,7 @@ import math
 
 from ..primitives import rounded_rect, smoothstep
 from ..painters import sparkle
-from ..spec import Action
+from ..spec import Widget
 
 # v3 QR (29x29, ECC-M) of https://github.com/sponsors/HamzaYslmn -- one int per row, bit c
 # (LSB = leftmost column) set = a dark module, drawn LIT (inverted) so the black screen is the quiet zone.
@@ -85,4 +85,4 @@ def _overlay(d, W, H, now, ox=0.0, oy=0.0):
     _kawaii_face(d, W, H, now)                             # Pip's kawaii face, resized to the right
 
 
-ACTION = Action("sponsor", mood="kawaii", overlay=_overlay)   # mood is hidden under the full-screen QR; matches the kawaii face the overlay draws
+WIDGET = Widget("sponsor", mood="kawaii", overlay=_overlay)   # mood is hidden under the full-screen QR; matches the kawaii face the overlay draws

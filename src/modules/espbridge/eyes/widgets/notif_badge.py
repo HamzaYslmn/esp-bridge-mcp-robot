@@ -7,7 +7,7 @@ import os
 
 from PIL import ImageFont
 
-from ..spec import Action
+from ..spec import Widget
 
 try:
     _F = ImageFont.load_default(size=10)
@@ -51,5 +51,5 @@ def _pose(now):
     return 4.0 * look, -2.0 * look, 1.0
 
 
-ACTION = Action("notif_badge", mood="neutral", pose=_pose, overlay=_overlay,
+WIDGET = Widget("notif_badge", mood="neutral", pose=_pose, overlay=_overlay,
                 tic=(lambda now: "wink_right" if _count() else None, _DING))   # wink the near eye each beat

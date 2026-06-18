@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from ..primitives import frame, rand
 from ..painters import sparkle
-from ..spec import Action
+from ..spec import Vibe
 
 ALWAYS_WIN = False              # True = force a match every spin (testing)
 
@@ -211,4 +211,4 @@ def _expired(now, start):       # self-end after the coins rain (win) or a short
     return t >= (_END_WIN if _won(_state["start"]) else _END_LOSE)
 
 
-ACTION = Action("jackpot", mood="neutral", overlay=_overlay, expired=_expired, still=True)
+VIBE = Vibe("jackpot", mood="neutral", overlay=_overlay, expired=_expired, still=True)

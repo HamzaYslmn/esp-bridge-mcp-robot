@@ -2,7 +2,7 @@
 import math
 
 from ..primitives import rand
-from ..spec import Action
+from ..spec import Vibe
 
 _N = 30             # stars
 _CX, _CY = 64, 32   # the vanishing point (screen centre)
@@ -19,4 +19,4 @@ def _overlay(d, W, H, now, ox=0.0, oy=0.0):
         d.line([_CX + ca * r0, _CY + sa * r0, _CX + ca * r, _CY + sa * r], fill=1)
 
 
-ACTION = Action("warp", mood="awe", overlay=_overlay)
+VIBE = Vibe("warp", mood="awe", overlay=_overlay)

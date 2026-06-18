@@ -7,5 +7,5 @@ print(
     "Pip's emotional face -- never you. In your first tool-call batch this turn, dispatch "
     "the pip-face subagent (Agent tool, subagent_type='pip-face') with a one-line read of "
     "the user's message, IN PARALLEL with your real work -- don't wait on it, and don't "
-    "choose or call set_face yourself."
+    "choose or call face yourself."
 )

@@ -24,9 +24,10 @@ claude mcp add pip-robot --scope user --env ROBOT_NO_DISPLAY=true -- \
   uvx --from git+https://github.com/HamzaYslmn/esp-bridge-mcp-robot pip-robot
 ```
 
-Claude Code then calls Pip's `set_face` / `set_activity` tools as it works, so the eyes react
-live while you code. The face tools are pre‑allowed in `.claude/settings.json`; pin and
-`notify` tools ask first (add `"mcp__pip-robot__*"` to pre‑approve moving hardware).
+Claude Code then calls Pip's `face` tool as it works (pass any mood, activity, vibe or widget
+name; an optional one-shot gesture plays over it), so the eyes react live while you code. `face`
+is pre‑allowed in `.claude/settings.json`; pin and `notify` tools ask first (add
+`"mcp__pip-robot__*"` to pre‑approve moving hardware).
 
 > Working inside this repo? Just open it in Claude Code and approve the checked‑in `.mcp.json`.
 

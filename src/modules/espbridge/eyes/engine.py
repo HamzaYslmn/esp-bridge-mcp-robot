@@ -21,7 +21,7 @@ _AUTO = ({"left", "right"}, 0.20, 1)         # spontaneous blink (eyes, dur, rep
 _MASK = ({"left", "right"}, 0.24, 1)         # blink that hides a mood's lid swap
 _BLINK_GAP, _IDLE_GAP = (2.0, 6.0), (1.5, 5.0)   # s between spontaneous blinks / idle glances
 
-# License lock (LICENSE 2.2): sha256 of the original GitHub Sponsors QR baked into actions/sponsor.py.
+# License lock (LICENSE 2.2): sha256 of the original GitHub Sponsors QR baked into widgets/sponsor.py.
 # On load the engine fingerprints that QR and, if it no longer matches, prints sponsor.SPONSOR_NOTICE
 # to stderr -- a notice, never a block. The sponsor link is required by the license; removing it (which
 # also means editing this constant) is permitted only under separate commercial terms.
@@ -71,10 +71,10 @@ class EyeEngine:
                  eye_w=36, eye_h=36, radius=12, gap=10,
                  set_brightness=None, bright=255,          # bright = panel brightness, max by default
                  clock=time.monotonic):                    # swap for a virtual clock to render offline
-        from .actions import ACTIONS                       # pulled in here (not at module top) so effect
-        from .gestures import GESTURES                     # files can import the eye math above without
-        from .moods import MOODS                           # a circular import back through the registries
-        self.MOODS, self.GESTURES, self.ACTIONS = MOODS, GESTURES, ACTIONS
+        from . import LOOPING, MOODS, PLAYABLE             # pulled in here (not at module top) so effect
+        # files can import the eye math above without a circular import back through the registries.
+        # PLAYABLE = gestures + reactions (one-shots); LOOPING = actions + vibes + widgets (loops).
+        self.MOODS, self.GESTURES, self.ACTIONS = MOODS, PLAYABLE, LOOPING
         self._verify_sponsor()                             # license lock: notice if the sponsor link was altered
 
         self._show, self._clock = show, clock
@@ -112,7 +112,7 @@ class EyeEngine:
             return
         _sponsor_checked = True
         try:
-            from .actions import sponsor
+            from .widgets import sponsor
             if sponsor.fingerprint() != _SPONSOR_FINGERPRINT:
                 print(sponsor.SPONSOR_NOTICE, file=sys.stderr)
         except Exception:

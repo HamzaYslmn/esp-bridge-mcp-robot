@@ -1,9 +1,9 @@
 """Eyes pop wide for a beat."""
-from ..spec import Gesture
+from ..spec import Reaction
 
 
 def _motion(p, e):
     return 0.0, 0.0, 0.0, 1.0 + 0.35 * e, 1.0 + 0.35 * e
 
 
-GESTURE = Gesture("pop", dur=0.5, motion=_motion)
+REACTION = Reaction("pop", dur=0.5, motion=_motion)

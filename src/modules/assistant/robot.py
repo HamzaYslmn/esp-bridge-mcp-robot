@@ -6,7 +6,7 @@ import time
 
 from modules.assistant.tools import build_tools
 from modules.espbridge.display import NullDisplay, WindowDisplay, connect_display
-from modules.espbridge.eyes import ACTIONS, GESTURES, MOODS, EyeEngine
+from modules.espbridge.eyes import ACTIONS, GESTURES, MOODS, REACTIONS, VIBES, WIDGETS, EyeEngine
 
 
 class Robot:
@@ -27,11 +27,23 @@ class Robot:
                              bright=int(os.getenv("ROBOT_BRIGHTNESS", "255")))
         self.eyes.start()
         from modules.espbridge import gps
-        from modules.espbridge.eyes.actions import weather
+        from modules.espbridge.eyes.widgets import weather
         weather.bind(gps.locate)                 # weather uses the host's real location, IP as fallback
         if self.bridge_mgr is not None:          # board attached -> ping_pong reads real RTT off the link
             from modules.espbridge.eyes.actions import ping_pong
             ping_pong.bind(lambda: self.bridge_mgr.bridge().ping())
+            from modules.espbridge.eyes.widgets import battery_gauge
+            pin = int(os.getenv("PIP_BATTERY_PIN", "34"))            # GPIO34: ADC1, input-only
+            chg_pin = os.getenv("PIP_CHARGE_PIN")                    # e.g. TP4056 CHRG pin; unset = unknown
+            def read_mv():
+                b = self.bridge_mgr.bridge()
+                b.adc.config(pin, atten=11)                         # ~3.3V range; idempotent, survives reconnect
+                return b.adc.read_mv(pin)
+            def charging():
+                b = self.bridge_mgr.bridge()
+                b.gpio.mode(int(chg_pin), "input_pullup")           # CHRG is open-drain: pulled low while charging
+                return not b.gpio.read(int(chg_pin))
+            battery_gauge.bind(read_mv, charging if chg_pin else None)
         self.tools = build_tools(self.eyes, self.bridge_mgr)
 
     def run_chat(self):
@@ -58,10 +70,14 @@ class Robot:
             print(f"Pip> {reply}\n")
 
     def _menu_items(self):
-        """The flat (kind, name) list the demo menu numbers index into."""
+        """The flat (kind, name) list the demo menu numbers index into. One-shots (gestures,
+        reactions) then loops (activities, vibes, widgets) sit contiguous, so the columns map."""
         return ([("mood", m) for m in MOODS]
                 + [("gesture", g) for g in GESTURES]
-                + [("activity", a) for a in ACTIONS])
+                + [("reaction", r) for r in REACTIONS]
+                + [("activity", a) for a in ACTIONS]
+                + [("vibe", v) for v in VIBES]
+                + [("widget", w) for w in WIDGETS])
 
     def _capture(self, token, items):
         """Render a 30s GIF for a 'gNN'/'gNAME' token -- develop the face with no OLED."""
@@ -76,7 +92,7 @@ class Robot:
             kind, name = match
         from modules.espbridge.eyes.record import record_gif
         print(f"-> rendering 30s GIF of {kind}: {name} ...")
-        print(f"wrote {record_gif(kind, name)}")
+        print(f"wrote {record_gif(name)}")
 
     def demo(self, capture=None):
         """Interactive menu: pick an emotion, gesture or activity to play."""
@@ -86,16 +102,25 @@ class Robot:
             return
         moods = [n for k, n in items if k == "mood"]
         gestures = [n for k, n in items if k == "gesture"]
+        reactions = [n for k, n in items if k == "reaction"]
         activities = [n for k, n in items if k == "activity"]
+        vibes = [n for k, n in items if k == "vibe"]
+        widgets = [n for k, n in items if k == "widget"]
 
         def show_menu():
-            # three side-by-side columns; the printed number is the index into `items`
+            # six side-by-side columns (one per folder); the printed number indexes into `items`,
+            # so each column's offset is the running total of the columns before it.
+            nm, ng, nr, na, nv = (len(moods), len(gestures), len(reactions),
+                                  len(activities), len(vibes))
             cols = [("MOODS", moods, 0),
-                    ("GESTURES", gestures, len(moods)),
-                    ("ACTIVITIES", activities, len(moods) + len(gestures))]
+                    ("GESTURES", gestures, nm),
+                    ("REACTIONS", reactions, nm + ng),
+                    ("ACTIVITIES", activities, nm + ng + nr),
+                    ("VIBES", vibes, nm + ng + nr + na),
+                    ("WIDGETS", widgets, nm + ng + nr + na + nv)]
             w = max(len(n) for _, n in items)                       # widest name
             cw = w + 4                                              # "NN. " prefix + name
-            total = cw * 3 + 6                                      # plus two " | " gutters
+            total = cw * len(cols) + 3 * (len(cols) - 1)            # name cells + " | " gutters
             cell = lambda i, n: f"{i:>2}. {n:<{w}}"
             print("\n  " + "=" * total)
             print("  " + " Pip demo menu".ljust(total))
@@ -116,9 +141,9 @@ class Robot:
             if kind == "mood":
                 self.eyes.set_activity("idle")
                 self.eyes.set_mood(name)
-            elif kind == "gesture":
+            elif kind in ("gesture", "reaction"):    # both are one-shot moves
                 self.eyes.play_gesture(name)
-            else:
+            else:                                    # activity, vibe or widget -- all loop
                 self.eyes.set_mood("neutral")
                 self.eyes.set_activity(name)
 

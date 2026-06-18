@@ -24,9 +24,11 @@ Source under `src/`; imports are absolute from there (`from modules.…`). The s
 package installs as `modules`, so `uvx --from git+<repo> pip-robot` runs it with no
 checkout. Settings come from `os.getenv` (every read has a code default). Our
 `modules/espbridge` ≠ the installed `espbridge` library. Add a capability in
-`build_tools`; add a face by dropping one self-contained file in `eyes/moods/`,
-`eyes/gestures/`, or `eyes/actions/` (each exposes a single `MOOD`/`GESTURE`/`ACTION` —
-see `eyes/spec.py`), then list its name in that folder's `__init__.py` order tuple
+`build_tools`; add a face by dropping one self-contained file in one of the six effect
+folders — `eyes/moods/` `gestures/` `reactions/` `actions/` `vibes/` `widgets/` (each exposes
+a single `MOOD`/`GESTURE`/`REACTION`/`ACTION`/`VIBE`/`WIDGET` — see `eyes/spec.py`: a held mood,
+a one-shot move, or a looping overlay that's a task status (action), pure decoration (vibe), or
+live data (widget)), then list its name in that folder's `__init__.py` order tuple
 (that tuple is the curated order — menus, showcase, LLM enum). Shared bits: `painters.py`
 (lid carvers), `primitives.py` (draw/math), `engine.py` (renderer). Eyeball a face
 headless with `uv run docs/make_gif.py <face>` (writes a 5-frame `docs/<face>_preview.png`,
@@ -40,15 +42,24 @@ process itself and owns its lifecycle — one instance per session, which keeps 
 owner of the BLE link (stop it before running the demo). Because stdio uses **stdout** for
 JSON-RPC, nothing may print to stdout — all logs go to stderr. No port, no HTTP.
 
+**Tools** (`assistant/tools.py`, one plain function each, served verbatim by `mcp_server.py`):
+`face(name, gesture)` and `notify(reason)` always; `digital_read(pin)` and `set_servo(pin, angle)`
+only when a board is attached. `face` is the one visual entry point — pass **any** effect name and
+the server routes it (a mood is held, a looping activity/vibe/HUD runs until changed, the optional
+`gesture` plays once over the top; `name='idle'` clears). The valid names in each tool's description
+are **generated from the eye registries** at build time — add or move an effect and the tool docs
+update themselves; never hand-list names here. The same functions back the Ollama brain (`brain.py`).
+
 ## Face — keep Pip alive (do this, don't just read it)
 
 **Both layers are automatic now — don't hand-drive either.**
 
 - **Activity** (what Pip's *doing*): `mcp_tool` hooks in `.claude/settings.json` cover the
   Claude Code hook lifecycle (24 events). Each is **typed to how long it should read** — a
-  looping `set_activity` for a state that lingers, a *bare* held `set_face` emotion for a mood
-  that should dwell, and a one-shot `set_face` gesture only for a genuinely fleeting beat (a
-  quick nod/wink). A flashing gesture where Pip should *dwell* feels wrong, so those became
+  looping activity `name` for a state that lingers, a *bare* held mood `name` for a mood that
+  should dwell, and a mood `name` + one-shot `gesture` only for a genuinely fleeting beat (a
+  quick nod/wink) — all through the single `face(name, gesture)` tool. A flashing gesture where
+  Pip should *dwell* feels wrong, so those became
   actions/bare-moods. The everyday flow: `thinking` on `UserPromptSubmit`, per-tool activities
   on `PreToolUse` (editing / working / scanning / searching / connecting), `waiting` while you
   ask the user something (`PreToolUse` on `AskUserQuestion` — `Notification` does *not* fire for
@@ -68,7 +79,7 @@ JSON-RPC, nothing may print to stdout — all logs go to stderr. No port, no HTT
   mood-picking to the cheap **pip-face (Haiku)** subagent. When you see it, dispatch
   pip-face (Agent, `subagent_type='pip-face'`) in your first tool-call batch, in parallel
   with your real work — it reads the message, picks a fitting mood, and sets it via
-  `set_face` over the shared link. **Don't choose or call `set_face` yourself.**
+  `face` over the shared link. **Don't choose or call `face` yourself.**
 
 All these hooks/subagents reuse this session's MCP connection, so they never open a second
 BLE link.
@@ -76,5 +87,5 @@ BLE link.
 **The only face you still drive by hand** is a one-off situational *action* mid-task, when
 it genuinely fits — an event, not the per-message mood (pip-face owns that):
 
-- **A snag or error** → `set_activity("glitch")`.
-- **A win / a breather** → `set_activity("smoking")` (a chilled break — it's an action).
+- **A snag or error** → `face("glitch")`.
+- **A win / a breather** → `face("smoking")` (a chilled break — it's an action).

@@ -6,20 +6,19 @@ through tool calls (set_activity + generic pin tools). History is kept across tu
 """
 from __future__ import annotations
 
-from modules.espbridge.eyes import GESTURES, MOODS
+from modules.espbridge.eyes import GESTURES, MOODS, REACTIONS
 from modules.llm import ollama_llm
 
 MAX_HISTORY = 24  # ~12 exchanges
 
-_EMOTIONS = tuple(MOODS)                 # mood names, in curated order
-_GESTURES = ("none", *GESTURES)          # gesture names + the "no gesture" sentinel
+_GESTURES = ("none", *GESTURES, *REACTIONS)    # one-shot moves (deliberate + reflexes) + sentinel
 
-# grammar-constrained reply schema; emotion/gesture are locked to the real vocabulary
+# grammar-constrained reply schema; emotion/gesture are locked to the real vocabulary (MOODS in order)
 REPLY_SCHEMA = {
     "type": "object",
     "properties": {
         "response": {"type": "string"},
-        "emotion": {"type": "string", "enum": list(_EMOTIONS)},
+        "emotion": {"type": "string", "enum": list(MOODS)},
         "gesture": {"type": "string", "enum": list(_GESTURES)},
     },
     "required": ["response", "emotion"],
@@ -36,19 +35,20 @@ eyes -- the emotion shows them.
 - gesture: an optional one-shot move (default "none"), one of: %s.
 
 Tools are for acting, not talking:
-- set_activity before a slow step -- thinking while you reason, searching/scanning \
-when you look something up, working when you run a task -- then set_activity('idle').
-- Drive any ESP32 pin (digital_write/read, set_servo, set_pwm, play_tone, \
-read_analog). The user says what's wired where; remember it and use the right pin. \
-If you don't know a pin, ask.
+- face('<activity>') before a slow step -- thinking while you reason, searching/scanning \
+when you look something up, working when you run a task -- then face('idle').
+- Drive the ESP32: digital_read a pin (button/switch), set_servo a pin to an angle. \
+The user says what's wired where; remember it and use the right pin. If you don't \
+know a pin, ask.
 
-Stay in character.""" % (", ".join(_EMOTIONS), ", ".join(_GESTURES))
+Stay in character.""" % (", ".join(MOODS), ", ".join(_GESTURES))
 
 
 class Brain:
     def __init__(self, tools, eyes):
-        # emotion/gesture come from the structured reply, so set_face is dropped here
-        self.tools = [t for t in tools if t.__name__ != "set_face"]
+        # the resting emotion/gesture come from each structured reply; the model may still call
+        # face('<activity>') to show a busy loop mid-turn (the reply's emotion wins at turn end).
+        self.tools = tools
         self.eyes = eyes
         self.history: list[dict] = []
 

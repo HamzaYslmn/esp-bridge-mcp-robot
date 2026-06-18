@@ -1,7 +1,7 @@
 """Recording -- a blinking REC dot and a running mm:ss timer."""
 from PIL import ImageFont
 
-from ..spec import Action
+from ..spec import Vibe
 
 try:
     _F = ImageFont.load_default(size=9)
@@ -29,4 +29,4 @@ def _overlay(d, W, H, now, ox=0.0, oy=0.0):
     d.text(((W - d.textlength(ts, font=_FT)) / 2, H - 15), ts, font=_FT, fill=1)
 
 
-ACTION = Action("recording", mood="alert", overlay=_overlay)
+VIBE = Vibe("recording", mood="alert", overlay=_overlay)

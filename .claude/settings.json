@@ -2,104 +2,103 @@
   "enabledMcpjsonServers": ["pip-robot"],
   "permissions": {
     "allow": [
-      "mcp__pip-robot__set_face",
-      "mcp__pip-robot__set_activity",
+      "mcp__pip-robot__face",
       "mcp__pip-robot__notify"
     ]
   },
   "hooks": {
     "SessionStart": [
-      { "matcher": "startup", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "wakeup" }, "statusMessage": "Waking Pip" } ] },
-      { "matcher": "resume", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_face", "input": { "emotion": "chill" } } ] },
-      { "matcher": "clear", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_face", "input": { "emotion": "neutral", "gesture": "double_blink" } } ] }
+      { "matcher": "startup", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "wakeup" }, "statusMessage": "Waking Pip" } ] },
+      { "matcher": "resume", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "chill" } } ] },
+      { "matcher": "clear", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "neutral", "gesture": "double_blink" } } ] }
     ],
     "Setup": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "building" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "building" } } ] }
     ],
     "UserPromptSubmit": [
       {
         "hooks": [
-          { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "thinking" } }
+          { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "thinking" } }
         ]
       }
     ],
     "PreToolUse": [
-      { "matcher": "Edit|Write|NotebookEdit", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "editing" } } ] },
-      { "matcher": "Bash|PowerShell", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "working" } } ] },
-      { "matcher": "Read", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "scanning" } } ] },
-      { "matcher": "Grep|Glob", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "searching" } } ] },
-      { "matcher": "WebFetch|WebSearch", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "connecting" } } ] },
-      { "matcher": "AskUserQuestion", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "waiting" } } ] }
+      { "matcher": "Edit|Write|NotebookEdit", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "editing" } } ] },
+      { "matcher": "Bash|PowerShell", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "working" } } ] },
+      { "matcher": "Read", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "scanning" } } ] },
+      { "matcher": "Grep|Glob", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "searching" } } ] },
+      { "matcher": "WebFetch|WebSearch", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "connecting" } } ] },
+      { "matcher": "AskUserQuestion", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "waiting" } } ] }
     ],
     "PermissionRequest": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_face", "input": { "emotion": "nervous" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "nervous" } } ] }
     ],
     "PermissionDenied": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_face", "input": { "emotion": "sad", "gesture": "refuse" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "sad", "gesture": "refuse" } } ] }
     ],
     "PostToolUseFailure": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "debugging" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "debugging" } } ] }
     ],
     "Notification": [
       { "matcher": "permission_prompt", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "notify", "input": { "reason": "needs you" } } ] },
-      { "matcher": "idle_prompt", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "smoking" } } ] },
-      { "matcher": "auth_success", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_face", "input": { "emotion": "happy", "gesture": "wink_right" } } ] }
+      { "matcher": "idle_prompt", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "smoking" } } ] },
+      { "matcher": "auth_success", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "happy", "gesture": "wink_right" } } ] }
     ],
     "SubagentStart": [
-      { "matcher": "^(?!pip-face).*", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "processing" } } ] }
+      { "matcher": "^(?!pip-face).*", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "processing" } } ] }
     ],
     "SubagentStop": [
-      { "matcher": "^(?!pip-face).*", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_face", "input": { "emotion": "lovely" } } ] }
+      { "matcher": "^(?!pip-face).*", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "lovely" } } ] }
     ],
     "TaskCreated": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_face", "input": { "emotion": "wired", "gesture": "look_up" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "wired", "gesture": "look_up" } } ] }
     ],
     "TaskCompleted": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "celebrate" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "celebrate" } } ] }
     ],
     "StopFailure": [
       {
         "hooks": [
-          { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "glitch" } }
+          { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "glitch" } }
         ]
       }
     ],
     "Stop": [
       {
         "hooks": [
-          { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "idle" } }
+          { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "idle" } }
         ]
       }
     ],
     "TeammateIdle": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_face", "input": { "emotion": "sleepy" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "sleepy" } } ] }
     ],
     "ConfigChange": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_face", "input": { "emotion": "suspicious", "gesture": "squint" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "suspicious", "gesture": "squint" } } ] }
     ],
     "CwdChanged": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_face", "input": { "emotion": "surprised", "gesture": "look_right" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "surprised", "gesture": "look_right" } } ] }
     ],
     "WorktreeCreate": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_face", "input": { "emotion": "awe", "gesture": "look_up" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "awe", "gesture": "look_up" } } ] }
     ],
     "WorktreeRemove": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_face", "input": { "emotion": "gloomy", "gesture": "look_down" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "gloomy", "gesture": "look_down" } } ] }
     ],
     "PreCompact": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "meditate" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "meditate" } } ] }
     ],
     "PostCompact": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_face", "input": { "emotion": "awe", "gesture": "scan_sweep" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "awe", "gesture": "scan_sweep" } } ] }
     ],
     "Elicitation": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_activity", "input": { "activity": "listening" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "listening" } } ] }
     ],
     "ElicitationResult": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_face", "input": { "emotion": "happy", "gesture": "nod" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "happy", "gesture": "nod" } } ] }
     ],
     "SessionEnd": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "set_face", "input": { "emotion": "standby", "gesture": "blink_down" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "standby", "gesture": "blink_down" } } ] }
     ]
   }
 }

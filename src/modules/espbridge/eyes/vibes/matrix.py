@@ -2,7 +2,7 @@
 from PIL import ImageFont
 
 from ..primitives import rand
-from ..spec import Action
+from ..spec import Vibe
 
 _CHARS = "01<>*+=$#%&8Z7XK"
 _STEP = 8           # column spacing (px)
@@ -27,4 +27,4 @@ def _overlay(d, W, H, now, ox=0.0, oy=0.0):
                 d.text((x, y), ch, font=_FONT, fill=1)
 
 
-ACTION = Action("matrix", mood="focused", overlay=_overlay)
+VIBE = Vibe("matrix", mood="focused", overlay=_overlay)

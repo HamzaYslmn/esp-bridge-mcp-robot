@@ -8,35 +8,34 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from PIL import Image
+
+from . import LOOPING, MOODS, PLAYABLE   # the two dispatch pools + held moods
 from .engine import EyeEngine
-from .gestures import GESTURES
 
 W, H = 128, 64
 FPS = 24      # capture / playback frame rate (matches the real panel)
 SCALE = 3     # pixel zoom of the output GIF
 
 
-def record_gif(kind, name, *, seconds=30.0, fps=FPS, scale=SCALE, out=None):
-    """Render `seconds` of one face to a looping GIF; returns the written path."""
-    try:
-        from PIL import Image
-    except ImportError:  # docs/dev extra; the robot itself never needs it
-        raise SystemExit("GIF capture needs Pillow:  uv add pillow")
-
+def record_gif(name, *, seconds=30.0, fps=FPS, scale=SCALE, out=None):
+    """Render `seconds` of one face to a looping GIF; returns the written path. Routes by the same
+    two dispatch pools the engine uses, so every folder (moods/gestures/reactions/actions/vibes/
+    widgets) just works -- no per-kind switch to keep in sync."""
     clock = [0.0]
     eyes = EyeEngine(lambda _img: None, width=W, height=H, fps=fps, clock=lambda: clock[0])
     eyes.reset_timers(clock[0])
     eyes.set_activity("idle")
     eyes.set_mood("neutral")
 
-    if kind == "mood":
-        eyes.set_mood(name)
-    elif kind == "activity":
+    if name in MOODS:
+        eyes.set_mood(name)              # a held expression
+    elif name in LOOPING:                # actions, vibes, widgets -- all loop
         eyes.set_activity(name)
-    else:
+    else:                                # gestures, reactions -- one-shot, re-fired below
         eyes.play_gesture(name)
 
-    period = GESTURES[name].dur if kind == "gesture" else None   # re-fire one-shots
+    period = PLAYABLE[name].dur if name in PLAYABLE else None   # re-fire one-shots to fill the clip
     next_fire = period
     frames = []
     for _ in range(max(1, round(seconds * fps))):

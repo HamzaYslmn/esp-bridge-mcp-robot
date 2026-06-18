@@ -18,7 +18,8 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from modules.espbridge.eyes import ACTIONS, GESTURES, MOODS, EyeEngine  # noqa: E402
+from modules.espbridge.eyes import (  # noqa: E402
+    ACTIONS, GESTURES, LOOPING, MOODS, PLAYABLE, REACTIONS, VIBES, WIDGETS, EyeEngine)
 
 W, H = 128, 64
 SCALE = 3          # pixel zoom for the eyes
@@ -70,7 +71,7 @@ class Driver:
 
 
 def _gesture_dur(name):
-    return GESTURES[name].dur
+    return PLAYABLE[name].dur            # gestures + reactions
 
 
 def _load_font(size=16):
@@ -83,12 +84,13 @@ def _load_font(size=16):
 
 
 def _kind(name):
-    """Which layer a face name belongs to (None if unknown)."""
+    """Which mechanic a face name plays as (None if unknown). Reactions play as a gesture,
+    widgets as an activity -- the two pooled dispatch layers."""
     if name in MOODS:
         return "mood"
-    if name in GESTURES:
+    if name in PLAYABLE:
         return "gesture"
-    if name in ACTIONS:
+    if name in LOOPING:
         return "activity"
     return None
 
@@ -101,8 +103,14 @@ def _script():
         yield f"mood: {m}", MOOD_SEC, "mood", m
     for g in GESTURES:
         yield f"gesture: {g}", max(0.8, _gesture_dur(g) + GEST_PAD), "gesture", g
+    for r in REACTIONS:
+        yield f"reaction: {r}", max(0.8, _gesture_dur(r) + GEST_PAD), "gesture", r
     for a in ACTIONS:
         yield f"activity: {a}", ACT_SEC, "activity", a
+    for v in VIBES:
+        yield f"vibe: {v}", ACT_SEC, "activity", v
+    for w in WIDGETS:
+        yield f"widget: {w}", ACT_SEC, "activity", w
 
 
 def _compose(eye, caption, font):
@@ -154,7 +162,10 @@ def preview(name):
         print(f"unknown face: {name!r}", file=sys.stderr)
         print("moods:      " + " ".join(MOODS), file=sys.stderr)
         print("gestures:   " + " ".join(GESTURES), file=sys.stderr)
+        print("reactions:  " + " ".join(REACTIONS), file=sys.stderr)
         print("activities: " + " ".join(ACTIONS), file=sys.stderr)
+        print("vibes:      " + " ".join(VIBES), file=sys.stderr)
+        print("widgets:    " + " ".join(WIDGETS), file=sys.stderr)
         return 2
 
     drv = Driver()

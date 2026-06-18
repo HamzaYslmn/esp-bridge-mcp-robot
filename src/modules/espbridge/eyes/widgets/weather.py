@@ -12,7 +12,7 @@ import urllib.request
 
 from PIL import ImageFont
 
-from ..spec import Action
+from ..spec import Widget
 
 _GEO = "https://ipwho.is/"          # IP-fallback location (https, no key)
 _API = ("https://api.open-meteo.com/v1/forecast"
@@ -25,7 +25,7 @@ _TIMEOUT = 6            # s per request
 
 try:
     _F = ImageFont.load_default(size=12)
-    _FS = ImageFont.load_default(size=9)    # smaller, for the place name
+    _FS = ImageFont.load_default(size=10)   # slightly smaller, for the place name
 except TypeError:                           # ancient Pillow
     _F = _FS = ImageFont.load_default()
 
@@ -135,19 +135,23 @@ def _icon(d, cx, cy, code, day):
         (_sun if day else _moon)(d, cx, cy)
 
 
+def _pose(now):
+    return 0.0, 5.0, 0.85          # eyes sit lower + a touch smaller -> clears the top HUD row
+
+
 def _overlay(d, W, H, now, ox=0.0, oy=0.0):
     _maybe_refresh(now)
     with _lock:
         temp, code, day, place = _state["temp"], _state["code"], _state["day"], _state["place"]
     if temp is None:                                           # offline -> slashed cloud + dashes, top-left
-        _cloud(d, 10, 5)
-        d.line([1, 12, 19, 0], fill=1)
-        d.text((20, 0), "--°C", font=_F, fill=1)
+        _cloud(d, 9, 5)
+        d.line([1, 12, 17, 0], fill=1)
+        d.text((24, 0), "--°C", font=_F, fill=1)
         return
-    _icon(d, 10, 7, code, day)                                 # icon + temp, top-left
-    d.text((20, 0), f"{temp}°C", font=_F, fill=1)
+    _icon(d, 9, 7, code, day)                                  # icon (~x2..18) + temp, top-left
+    d.text((24, 0), f"{temp}°C", font=_F, fill=1)              # gap so the icon never touches the heat
     if place:                                                  # place name, top-right
         d.text((W - d.textlength(place, font=_FS) - 2, 1), place, font=_FS, fill=1)
 
 
-ACTION = Action("weather", mood="chill", overlay=_overlay)
+WIDGET = Widget("weather", mood="attentive", pose=_pose, overlay=_overlay)

@@ -1,7 +1,7 @@
 """Now playing -- a little equalizer bouncing to the beat, with a music note."""
 import math
 
-from ..spec import Action
+from ..spec import Widget
 
 _BARS = 15
 
@@ -17,4 +17,4 @@ def _overlay(d, W, H, now, ox=0.0, oy=0.0):
     d.line([11, 2, 15, 3], fill=1)                    # flag
 
 
-ACTION = Action("now_playing", mood="happy", overlay=_overlay)
+WIDGET = Widget("now_playing", mood="happy", overlay=_overlay)

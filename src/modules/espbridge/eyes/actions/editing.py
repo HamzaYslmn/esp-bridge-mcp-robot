@@ -20,4 +20,4 @@ def _overlay(d, W, H, now, ox=0.0, oy=0.0):  # two small chibi hands tap the key
             d.line([nx, cy + 1, nx, cy + 5], fill=0, width=1)
 
 
-ACTION = Action("editing", mood="chill", overlay=_overlay)
+ACTION = Action("editing", mood="focused", overlay=_overlay)

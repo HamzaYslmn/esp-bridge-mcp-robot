@@ -1,5 +1,13 @@
-"""The contract a contributor fills in. Each effect is ONE file in moods/ gestures/ actions/
-exposing a single MOOD / GESTURE / ACTION; the folder's __init__ assembles them in order.
+"""The contract a contributor fills in. Each effect is ONE file in moods/ gestures/ reactions/
+actions/ vibes/ widgets/ exposing a single MOOD / GESTURE / REACTION / ACTION / VIBE / WIDGET;
+the folder's __init__ assembles them in order.
+
+There are six folders but only three *mechanics*: a held mood, a one-shot move, a looping
+overlay. A `reaction` is just a one-shot move fired in response to the world or the user (a
+sensor/event, or a reply like nod/refuse) rather than a self-initiated glance -- so it reuses
+`Gesture`. A `vibe` (pure decoration) and a `widget` (live data) are both looping overlays that
+carry no emotion -- so they reuse `Action`. The aliases at the bottom let each file read in its
+own vocabulary while the engine keeps one dispatch per mechanic.
 
 To add an effect: copy the nearest sibling file, edit it, then add its name to the ordered
 list in that folder's __init__.py. Nothing else to wire."""
@@ -45,3 +53,13 @@ class Action:
     expired: Optional[Callable] = None   # fn(now, start) -> True once it should end itself (else loops)
     still: bool = False                  # hold the gaze + no spontaneous blink while it runs (jackpot reels)
     tic: Optional[tuple] = None          # (fn(now)->gesture_name|None, period_s): play it every period (e.g. a wink)
+
+
+# Three one-shot/looping roles that reuse two mechanics. A reaction IS a one-shot move (a Gesture
+# the world fires, not one Pip chooses). A widget and a vibe are both looping overlays (an Action):
+# a widget shows live data, a vibe is pure decoration -- neither carries emotion. Same machinery,
+# own folder/menu -- alias so each file reads in its own vocabulary (`REACTION = Reaction(...)`,
+# `WIDGET = Widget(...)`, `VIBE = Vibe(...)`).
+Reaction = Gesture
+Widget = Action
+Vibe = Action
