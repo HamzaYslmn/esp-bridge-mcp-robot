@@ -29,6 +29,8 @@ class Robot:
         from modules.espbridge import gps
         from modules.espbridge.eyes.widgets import weather
         weather.bind(gps.locate)                 # weather uses the host's real location, IP as fallback
+        from modules.espbridge.eyes.vibes import solarflare
+        solarflare.watch(lambda: self.eyes.set_activity("solarflare"))   # yesterday's real M+ flares, replayed today
         if self.bridge_mgr is not None:          # board attached -> ping_pong reads real RTT off the link
             from modules.espbridge.eyes.actions import ping_pong
             ping_pong.bind(lambda: self.bridge_mgr.bridge().ping())
