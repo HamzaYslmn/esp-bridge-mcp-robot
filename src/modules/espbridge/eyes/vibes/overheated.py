@@ -1,4 +1,5 @@
 """Pip's running hot: the eyes waver behind a heat haze and thin smoke rises off the case.
+(Wears `tired` -- worn-out hooded lids -- under the haze.)
 
 Real(ish) heat physics. Hot air off the face is buoyant, so the turbulent refractive field
 *rises*; we model it as a thin phase screen advecting upward and bending the light that crosses
@@ -11,17 +12,14 @@ it. Two parts:
   * Particles -- discrete heat motes buoying off the bottom across the face and rising, winking
     out at varied heights so the field is dense low and thins as it climbs (no connected lines).
 
-The eyes themselves carry a light, tired lid-droop -- worn out -- under the haze.
-
-Self-check: `cd src && uv run python -m modules.espbridge.eyes.moods.overheated`.
+Self-check: `cd src && uv run python -m modules.espbridge.eyes.vibes.overheated`.
 ponytail: O(cells) mesh per frame, fine at 128x64; bump _STEP down for a finer warp if wanted."""
 import math
 
 from PIL import Image
 
-from ..painters import brow, lids
 from ..primitives import frame, rand
-from ..spec import Mood
+from ..spec import Vibe
 
 _RISE = 26.0       # px/s the heat haze climbs (buoyant convection)
 _AMP = 3.0         # px peak lateral refraction (gentle "shimmer")
@@ -82,12 +80,7 @@ def _heat_particles(d, W, H, now):
             d.point((round(x), round(y)), 1)
 
 
-def _paint(d, x, y, w, h, r, ir):
-    """Worn out: a high, slightly angled upper lid -- a touch tired, eyes still wide open."""
-    brow(d, x, y, w, h, 0.14, 0.26, ir)
-
-
-def _decor(d, W, H, now, ox=0.0, oy=0.0):
+def _overlay(d, W, H, now, ox=0.0, oy=0.0):
     img = frame(d)
     if img is None:
         return
@@ -95,7 +88,7 @@ def _decor(d, W, H, now, ox=0.0, oy=0.0):
     _heat_particles(d, W, H, now)  # heat motes rising off the bottom
 
 
-MOOD = Mood("overheated", paint=_paint, decor=_decor)
+VIBE = Vibe("overheated", mood="tired", overlay=_overlay)
 
 
 def _selfcheck():

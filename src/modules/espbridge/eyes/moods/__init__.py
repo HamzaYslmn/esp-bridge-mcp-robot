@@ -9,9 +9,9 @@ _ORDER = (
     # positive / warm
     "happy", "lovely", "kawaii", "awe", "cool",
     # focus / calm
-    "focused", "zen", "wired", "chill",
+    "focused", "wired", "chill",
     # sad / anxious / low
-    "sad", "gloomy", "worried", "nervous", "despair", "scared", "tired", "sleepy", "overheated",
+    "sad", "gloomy", "worried", "nervous", "despair", "scared", "tired", "sleepy",
     # angry / wary
     "angry", "furious", "devil", "suspicious", "skeptical",
     # dazed / goofy / off

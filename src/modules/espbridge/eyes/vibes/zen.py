@@ -1,16 +1,16 @@
-"""Eyes softly shut + cherry blossoms on a living breeze -- in flow."""
+"""Eyes softly shut + cherry blossoms on a living breeze -- in flow. (Wears `neutral`, held
+nearly-shut and still via the pose, so the falling sakura carries the whole scene.)"""
 import math
 
 from ..primitives import rand
-from ..painters import lids
-from ..spec import Mood
+from ..spec import Vibe
 
 
-def _paint(d, x, y, w, h, r, ir):   # eyes softly shut -- a calm centered line
-    lids(d, x, y, w, h, 0.46, 0.56)
+def _pose(now):
+    return 0.0, 0.0, 0.12          # gaze centred, eyes a soft shut line -- the blossoms do the rest
 
 
-def _decor(d, W, H, now, ox=0.0, oy=0.0):  # cherry blossoms on a living breeze -- "in flow"
+def _overlay(d, W, H, now, ox=0.0, oy=0.0):  # cherry blossoms on a living breeze -- "in flow"
     # each leaf falls at its own terminal speed and is carried right by the wind: light ones hang
     # and blow clear across (off the right edge), heavy ones drop to the floor. The breeze always
     # blows -- swelling gusts, soft lulls, never stalling -- so the leaves stream, never a waterfall.
@@ -51,4 +51,4 @@ def _decor(d, W, H, now, ox=0.0, oy=0.0):  # cherry blossoms on a living breeze 
         d.polygon(pts, fill=1)
 
 
-MOOD = Mood("zen", dh=-2, paint=_paint, decor=_decor, still=True)
+VIBE = Vibe("zen", mood="neutral", pose=_pose, overlay=_overlay, still=True)

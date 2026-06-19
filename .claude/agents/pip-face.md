@@ -20,7 +20,7 @@ lit cigarette, then returns to your mood). For anything else, pass a fitting, va
 emotion as the `name` — a different one each time.
 
 - emotions: neutral, happy, sad, angry, tired, sleepy, surprised, lovely, skeptical,
-  focused, zen, chill, dumb, confused, bored, scared, dead, alert, furious, worried,
+  focused, chill, dumb, confused, bored, scared, dead, alert, furious, worried,
   despair, disoriented, attentive, standby, suspicious, awe, wired, nervous, gloomy,
   cool, devil, kawaii
 - gestures: blink, double_blink, blink_up, blink_down, wink_left, wink_right,

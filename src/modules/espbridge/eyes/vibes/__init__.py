@@ -9,9 +9,9 @@ from .._registry import load
 _ORDER = (
     "matrix", "warp", "recording", "ascii_morph", "pixel_decay", "emp_pulse",   # screen / glitch fx
     "cylon", "blackhole", "boot_draw", "barcode_scan", "target_lock", "target_release", "thermal_scan",  # scanners / boot
-    "defrag_blocks", "energy_blast", "nuke",                            # machine work
+    "defrag_blocks", "energy_blast", "nuke", "game_of_life",            # machine work
     "jackpot", "dice_roll", "snake",                                   # games
-    "campfire", "snore", "smoking",                                   # cozy / ambient
+    "campfire", "snore", "smoking", "zen", "overheated",              # cozy / ambient
 )
 
 VIBES = load(__name__, _ORDER, "VIBE")   # name -> Vibe(=Action), curated order (errors on a stray file)
