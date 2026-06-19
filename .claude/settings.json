@@ -8,12 +8,15 @@
   },
   "hooks": {
     "SessionStart": [
-      { "matcher": "startup", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "wakeup" }, "statusMessage": "Waking Pip" } ] },
+      { "matcher": "startup", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "boot_draw" }, "statusMessage": "Waking Pip" } ] },
       { "matcher": "resume", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "chill" } } ] },
       { "matcher": "clear", "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "neutral", "gesture": "double_blink" } } ] }
     ],
     "Setup": [
       { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "building" } } ] }
+    ],
+    "UserPromptExpansion": [
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "attentive", "gesture": "scan" } } ] }
     ],
     "UserPromptSubmit": [
       {
@@ -54,7 +57,7 @@
       { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "wired", "gesture": "look_up" } } ] }
     ],
     "TaskCompleted": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "celebrate" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "happy", "gesture": "excited" } } ] }
     ],
     "StopFailure": [
       {
@@ -86,7 +89,7 @@
       { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "gloomy", "gesture": "look_down" } } ] }
     ],
     "PreCompact": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "meditate" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "zen" } } ] }
     ],
     "PostCompact": [
       { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "awe", "gesture": "scan_sweep" } } ] }
@@ -98,7 +101,7 @@
       { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "happy", "gesture": "nod" } } ] }
     ],
     "SessionEnd": [
-      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "standby", "gesture": "blink_down" } } ] }
+      { "hooks": [ { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "vibe" }, "statusMessage": "Pip signs off with a random vibe" } ] }
     ]
   }
 }

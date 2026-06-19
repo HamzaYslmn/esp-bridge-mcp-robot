@@ -46,7 +46,7 @@ JSON-RPC, nothing may print to stdout — all logs go to stderr. No port, no HTT
 `face(name, gesture)` and `notify(reason)` always; `digital_read(pin)` and `set_servo(pin, angle)`
 only when a board is attached. `face` is the one visual entry point — pass **any** effect name and
 the server routes it (a mood is held, a looping activity/vibe/HUD runs until changed, the optional
-`gesture` plays once over the top; `name='idle'` clears). The valid names in each tool's description
+`gesture` plays once over the top; `name='idle'` clears, `name='vibe'` plays a random vibe). The valid names in each tool's description
 are **generated from the eye registries** at build time — add or move an effect and the tool docs
 update themselves; never hand-list names here. The same functions back the Ollama brain (`brain.py`).
 
@@ -60,18 +60,20 @@ update themselves; never hand-list names here. The same functions back the Ollam
   should dwell, and a mood `name` + one-shot `gesture` only for a genuinely fleeting beat (a
   quick nod/wink) — all through the single `face(name, gesture)` tool. A flashing gesture where
   Pip should *dwell* feels wrong, so those became
-  actions/bare-moods. The everyday flow: `thinking` on `UserPromptSubmit`, per-tool activities
+  actions/bare-moods. The everyday flow: `attentive`+`scan` on `UserPromptExpansion` (a slash
+  command expanding -- rare, so no flood), `thinking` on `UserPromptSubmit`, per-tool activities
   on `PreToolUse` (editing / working / scanning / searching / connecting), `waiting` while you
   ask the user something (`PreToolUse` on `AskUserQuestion` — `Notification` does *not* fire for
   it), `processing` while a subagent runs (`SubagentStart`, **pip-face excluded** via
   `^(?!pip-face).*`), `debugging` on `PostToolUseFailure`, `glitch` on `StopFailure`, `idle` on
-  `Stop`. Big lifecycle beats use the four **self-ending actions** (in `eyes/actions/`, each ends
-  itself via `Action.expired`): `wakeup` on `SessionStart` startup, `celebrate` on
-  `TaskCompleted`, `meditate` (wears **zen**) on `PreCompact`, `powerdown` on `SessionEnd`.
+  `Stop`. Big lifecycle beats map to fitting existing effects: `boot_draw` (a boot-up vibe) on
+  `SessionStart` startup, `happy`+`excited` on `TaskCompleted`, `zen` (a calm vibe) on
+  `PreCompact`, and a **random vibe** — `face('vibe')`, a sentinel the tool expands to
+  `random.choice(VIBES)` — as a farewell flourish on `SessionEnd`.
   **smoking** rides `Notification/idle_prompt` (Pip takes a break while you're away). The MCP
   elicitation double-fire is deduped to the dedicated `Elicitation` (→ `listening`) /
   `ElicitationResult`. Deliberately **unmapped** to avoid strobe / BLE-flood: `MessageDisplay`,
-  `FileChanged`, `PostToolUse`, `PostToolBatch`, `UserPromptExpansion`, `InstructionsLoaded`.
+  `FileChanged`, `PostToolUse`, `PostToolBatch`, `InstructionsLoaded`.
   Each action wears its own fitting face (its `Action.mood`), so an activity never blends with
   the emotional mood.
 - **Emotional mood** (how Pip *feels*): a `UserPromptSubmit` command hook

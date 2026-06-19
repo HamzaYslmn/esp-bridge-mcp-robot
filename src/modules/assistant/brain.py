@@ -6,8 +6,8 @@ through tool calls (set_activity + generic pin tools). History is kept across tu
 """
 from __future__ import annotations
 
+from modules.assistant import ollama_llm
 from modules.espbridge.eyes import GESTURES, MOODS, REACTIONS
-from modules.llm import ollama_llm
 
 MAX_HISTORY = 24  # ~12 exchanges
 
@@ -61,3 +61,27 @@ class Brain:
         self.eyes.play_gesture(reply.get("gesture", "none"))  # one-shot first...
         self.eyes.set_mood(emotion)                           # ...then settle the face
         return reply.get("response") or "..."
+
+
+def chat(robot):
+    """Local Ollama chat loop in the terminal -- talk to Pip, face follows each reply."""
+    eyes = robot.eyes
+    brain = Brain(robot.tools, eyes)
+    print("--- Pip is awake --- (say 'bye' or Ctrl-C to sleep)\n")
+    while True:
+        try:
+            text = input("you> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if not text:
+            continue
+        if text.lower() in {"bye", "exit", "quit", "q"}:
+            break
+        eyes.play_gesture("blink")
+        eyes.set_activity("thinking")   # busy face; model may switch it
+        try:
+            reply = brain.respond(text)
+        finally:
+            eyes.set_activity("idle")    # never leave it stuck busy
+        print(f"Pip> {reply}\n")

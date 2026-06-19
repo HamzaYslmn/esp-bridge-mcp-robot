@@ -10,7 +10,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from . import LOOPING, MOODS, PLAYABLE   # the two dispatch pools + held moods
+from . import PLAYABLE   # one-shot pool -> dur, to re-fire gestures across the clip
 from .engine import EyeEngine
 
 W, H = 128, 64
@@ -27,13 +27,7 @@ def record_gif(name, *, seconds=30.0, fps=FPS, scale=SCALE, out=None):
     eyes.reset_timers(clock[0])
     eyes.set_activity("idle")
     eyes.set_mood("neutral")
-
-    if name in MOODS:
-        eyes.set_mood(name)              # a held expression
-    elif name in LOOPING:                # actions, vibes, widgets -- all loop
-        eyes.set_activity(name)
-    else:                                # gestures, reactions -- one-shot, re-fired below
-        eyes.play_gesture(name)
+    eyes.show(name)                      # held mood / loop / one-shot -- routed by the engine
 
     period = PLAYABLE[name].dur if name in PLAYABLE else None   # re-fire one-shots to fill the clip
     next_fire = period

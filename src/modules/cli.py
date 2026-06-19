@@ -30,7 +30,7 @@ load_dotenv(Path.cwd() / ".env")                # .env beside wherever you launc
 load_dotenv(_SRC / ".env")                       # repo's src/.env, if present
 load_dotenv(_SRC / ".env.example")               # repo defaults; no-op once installed
 
-from modules.assistant.robot import Robot
+from modules.robot import Robot
 
 
 def _on(name, default=""):
@@ -43,17 +43,19 @@ def main():
     # No board on this machine? Pass --no-display, or set ROBOT_NO_DISPLAY=true so the MCP
     # server Claude Code spawns runs against the on-screen OLED emulator (no CLI flag needed).
     no_display = _on("ROBOT_NO_DISPLAY") or "--no-display" in args
-    robot = Robot(no_display=no_display)
+    robot = Robot(no_display=no_display).start()   # start() begins animating + feeds (kept out of __init__)
     # Ctrl+C with the Tk emulator up: on Windows Tcl grabs the console (WindowDisplay re-traps it);
     # on Unix re-assert Python's handler so a terminal Ctrl+C still raises KeyboardInterrupt here.
     if no_display and sys.platform != "win32":
         signal.signal(signal.SIGINT, signal.default_int_handler)
     try:
         if "demo" in args:
+            from modules.demo import demo
             cap = next((a for a in args if a != "demo" and a[:1] == "g"), None)   # demo g13
-            robot.demo(capture=cap)
+            demo(robot, capture=cap)
         elif "ollama" in args or "chat" in args or not mcp:
-            robot.run_chat()
+            from modules.assistant.brain import chat
+            chat(robot)
         else:
             from modules.mcp_server import serve
             serve(robot)   # MCP over stdio; Claude Code spawns and owns this process

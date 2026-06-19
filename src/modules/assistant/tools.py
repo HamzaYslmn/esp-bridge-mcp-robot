@@ -5,8 +5,9 @@ an effect never touches this file -- the folder __init__ order tuples are the on
 (see eyes/spec.py)."""
 from __future__ import annotations
 
-from modules.espbridge.eyes import (
-    ACTIONS, GESTURES, LOOPING, MOODS, PLAYABLE, REACTIONS, VIBES, WIDGETS)
+import random
+
+from modules.espbridge.eyes import ACTIONS, GESTURES, MOODS, REACTIONS, VIBES, WIDGETS
 
 _MOODS = ", ".join(MOODS)
 _MOVES = ", ".join(("none", *GESTURES, *REACTIONS))           # one-shot: idle glances + reflexes
@@ -20,18 +21,16 @@ def build_tools(eyes, mgr=None):
 
     def face(name: str, gesture: str = "none") -> str:
         n = (name or "").lower()
-        if n in MOODS:
-            eyes.set_mood(n)                    # a held expression
-        elif n in PLAYABLE and n not in LOOPING:
-            eyes.play_gesture(n)                # a one-shot passed as the main name
-        else:
-            eyes.set_activity(n)                # a looping activity/vibe/HUD, or "idle"/unknown -> stop
+        if n == "vibe":                         # surprise: a random looping vibe (e.g. a session-end flourish)
+            n = random.choice(list(VIBES))
+        eyes.show(n)                            # mood held / one-shot played / loop run ("idle" clears)
         eyes.play_gesture(gesture)              # optional one-shot overlay; no-op on "none"/unknown
-        return f"face: {name}" + ("" if (gesture or "none") == "none" else f"+{gesture}")
+        return f"face: {n}" + ("" if (gesture or "none") == "none" else f"+{gesture}")
     face.__doc__ = (
         "Put something on Pip's face -- pass any effect name and Pip does the right thing: a mood "
         "is held, a looping activity/vibe/HUD runs until you change it, and the optional one-shot "
-        "`gesture` plays over the top. Pass name='idle' to clear back to the resting face.\n\n"
+        "`gesture` plays over the top. Pass name='idle' to clear back to the resting face, or "
+        "name='vibe' for a random vibe.\n\n"
         f"name: a held mood -- {_MOODS}; or a loop (runs until changed) -- {_ACTIVITIES}.\n"
         f"gesture: an optional move played once (default 'none'). One of: {_MOVES}."
     )

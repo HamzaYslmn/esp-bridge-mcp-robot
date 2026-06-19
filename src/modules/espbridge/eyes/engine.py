@@ -170,6 +170,17 @@ class EyeEngine:
             if tic:                                       # align the periodic gesture to its period grid
                 self._next_tic = (int(self._activity_start / tic[1]) + 1) * tic[1]
 
+    def show(self, name):
+        """Route any effect name to the right layer: a held mood, a one-shot move, or a loop
+        ('idle'/unknown clears the loop). The single name-router tools.face and record_gif share."""
+        n = (name or "").lower()
+        if n in self.MOODS:
+            self.set_mood(n)                  # held expression
+        elif n in self.GESTURES:              # PLAYABLE pool: gestures + reactions (one-shots)
+            self.play_gesture(n)
+        else:
+            self.set_activity(n)              # LOOPING pool, or 'idle'/unknown -> stop
+
     def _face(self, mood, act):
         """The mood actually rendered: an active action wears its own fitting face,
         else the held emotional mood. (Caller passes a locked snapshot.)"""
