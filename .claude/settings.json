@@ -21,7 +21,8 @@
     "UserPromptSubmit": [
       {
         "hooks": [
-          { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "thinking" } }
+          { "type": "mcp_tool", "server": "pip-robot", "tool": "face", "input": { "name": "thinking" } },
+          { "type": "command", "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/dispatch_expression.py\"", "commandWindows": "python \"$env:CLAUDE_PROJECT_DIR\\.claude\\hooks\\dispatch_expression.py\"" }
         ]
       }
     ],

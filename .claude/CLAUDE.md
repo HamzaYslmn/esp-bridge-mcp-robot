@@ -76,18 +76,24 @@ update themselves; never hand-list names here. The same functions back the Ollam
   `FileChanged`, `PostToolUse`, `PostToolBatch`, `InstructionsLoaded`.
   Each action wears its own fitting face (its `Action.mood`), so an activity never blends with
   the emotional mood.
-- **Emotional mood** (how Pip *feels*): a `UserPromptSubmit` command hook
-  (`.claude/hooks/dispatch_mood.py`) re-injects a standing order every message to hand
-  mood-picking to the cheap **pip-face (Haiku)** subagent. When you see it, dispatch
-  pip-face (Agent, `subagent_type='pip-face'`) in your first tool-call batch, in parallel
-  with your real work — it reads the message, picks a fitting mood, and sets it via
-  `face` over the shared link. **Don't choose or call `face` yourself.**
+- **Emotion & expression** (how Pip *feels*, woven through what you *say*): a `UserPromptSubmit`
+  command hook (`.claude/hooks/dispatch_expression.py`) re-injects a two-part expression policy
+  every message. (1) **Instant reaction** — dispatch the cheap **pip-face (Haiku)** subagent
+  (Agent, `subagent_type='pip-face'`) in your first tool-call batch, in parallel with your real
+  work; it sets an opening face reacting to the message right away. (2) **Emote while you speak** —
+  as you write your reply, drive `face` *yourself* at each emotional beat, shifting the expression
+  as your tone evolves (~2–5 beats a reply, one for a terse answer; a held mood `name` plus an
+  optional `gesture` for a punctuation beat). Build on pip-face's opening, shift only on a genuine
+  tonal change, **never strobe**. This is the layer that makes Pip a *conversational* companion
+  rather than a frozen mood — the lifecycle activity faces (thinking/editing/…) still run on their
+  own. (Yes, you now drive `face` inline — that's the point; this supersedes the old "never call
+  `face` yourself" rule.)
 
 All these hooks/subagents reuse this session's MCP connection, so they never open a second
 BLE link.
 
-**The only face you still drive by hand** is a one-off situational *action* mid-task, when
-it genuinely fits — an event, not the per-message mood (pip-face owns that):
+**Beyond the expression policy above** (where you already drive `face` while you speak), two
+situational *actions* are worth firing by hand when they fit a specific event mid-task:
 
 - **A snag or error** → `face("glitch")`.
 - **A win / a breather** → `face("smoking")` (a chilled break — it's an action).
