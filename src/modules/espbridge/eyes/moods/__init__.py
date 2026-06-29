@@ -7,7 +7,7 @@ _ORDER = (
     # system
     "alert", "attentive", "standby",
     # positive / warm
-    "happy", "lovely", "kawaii", "awe", "cool",
+    "happy", "lovely", "kawaii", "cat", "awe", "cool",
     # focus / calm
     "focused", "wired", "chill",
     # sad / anxious / low
