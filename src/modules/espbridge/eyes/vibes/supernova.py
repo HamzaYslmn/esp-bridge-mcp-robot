@@ -56,7 +56,7 @@ _G = 1.0
 _GAM_SOFT, _GAM_STIFF = 1.20, 2.5    # adiabatic index: <4/3 collapses, >4/3 (above rho_nuc) bounces
 _RHO_NUC, _NUCP = 60.0, 6.0          # nuclear density where the EoS stiffens; sharpness of the crossover
 _CQ, _CL = 3.0, 1.0                  # von Neumann-Richtmyer artificial viscosity (quadratic, linear)
-_P_FAC, _V_SEED = 0.86, 0.04         # start the star a touch under-pressured + a whisper of infall (smooth onset)
+_P_FAC, _V_SEED = 0.80, 0.07         # start the star under-pressured + a whisper of infall: runs out of fuel sooner
 _HEAT_RATE, _HEAT_WIN = 6.8, 0.78    # delayed neutrino-driven revival: rate + window after bounce
 _HEAT_LO, _HEAT_HI = 0.3, 0.6        # the gain region: rho in (_HEAT_LO, _HEAT_HI*rho_nuc) behind the shock
 _EPS_FLOOR = 1e-8
@@ -65,15 +65,15 @@ _4PI = 4.0 * math.pi
 _4PI3 = _4PI / 3.0
 
 # ---- pacing: wall-time -> sim-time, with bullet-time through the bounce, then a held remnant ----
-_T_INTRO = 1.1          # eyes merge and round into the newborn-star sphere
-_T_EXPAND = 2.6         # the envelope swells into a supergiant as core fusion runs through its fuels
-_GROW_SEED = 9.0        # newborn-star sphere radius (px) the eyes merge into, before it expands
+_T_INTRO = 0.9          # eyes merge and round into the newborn-star sphere
+_T_EXPAND = 1.5         # the envelope swells into a supergiant as core fusion runs through its fuels
+_GROW_SEED = 12.0       # newborn-star sphere radius (px) the eyes merge into, before it expands
 _GROW_GAIN = 1.25       # limb-darkened sphere brightness -- shared by intro/grow so the hand-off is seamless
-_HANDOFF = 0.74         # fraction of the grow phase after which it crossfades into the live hydro field
-_SIM_RATE = 0.45        # base sim-seconds per wall-second
+_HANDOFF = 0.62         # fraction of the grow phase after which it crossfades into the live hydro field
+_SIM_RATE = 1.05        # base sim-seconds per wall-second (fast through the slow fuel-burning life)
 _SIM_TAU = 0.20         # smooth wall-time jitter before it reaches the hydro clock
-_BULLET = 0.30          # slow to this fraction near the bounce so we savour the rebound
-_T_FREEZE = 11.0        # sim-seconds: the ejecta has flown off and thinned -> freeze on the lone pulsar
+_BULLET = 0.22          # slow to this fraction near the bounce so we savour the rebound
+_T_FREEZE = 10.0        # sim-seconds: the ejecta has flown off and thinned -> freeze on the lone pulsar
 
 # ---- look: rho^2 emission, temperature-gated, line-of-sight projected ----
 _EM_REF, _EM_P = 0.012, 0.5          # LOS emission column -> brightness (power-law)
@@ -368,8 +368,10 @@ def _blit(d, b):
 
 
 def _sphere_b(R, gain=_GROW_GAIN):
-    """A limb-darkened solid sphere of radius R (px). The shape the eyes become and the star grows from."""
-    return np.clip(gain * (1.0 - (_RAD / max(R, 1e-6)) ** 2), 0.0, 1.0)
+    """A near-solid star disc of radius R (px) with a soft limb -- the shape the eyes become and the
+    star grows from. Flat-topped (high power) so it reads the same as the live hydro disc and the
+    grow -> hydro hand-off is solid-to-solid, with no grainy gradient seam."""
+    return np.clip(gain * (1.0 - (_RAD / max(R, 1e-6)) ** 6), 0.0, 1.0)
 
 
 def _field_b(now):
@@ -407,8 +409,8 @@ def _intro_b(u):
     for cx0 in (41.0, 87.0):
         cx = cx0 + (_CX - cx0) * m
         q = ((_XS - cx) / max(rx, 1e-6)) ** 2 + ((_YS - _CY) / max(ry, 1e-6)) ** 2
-        eyes += np.clip(1.0 - q, 0.0, 1.0) ** 0.72
-    return (1.0 - fuse) * np.clip(eyes, 0.0, 1.0) + fuse * _sphere_b(_GROW_SEED)
+        eyes = np.maximum(eyes, np.clip(_GROW_GAIN * (1.0 - q ** 3), 0.0, 1.0))   # solid eyes, like the star
+    return (1.0 - fuse) * eyes + fuse * _sphere_b(_GROW_SEED)
 
 
 def _grow_b(u):
